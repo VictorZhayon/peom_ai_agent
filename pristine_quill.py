@@ -89,8 +89,8 @@ if st.button("🖋️ Generate Poem"):
                         unsafe_allow_html=True)
             
             # Download button
-            st.download_button("Download Poem", poem, file_name="tiaraquill_poem.txt")
+            st.download_button("Download Poem", poem, file_name="pristinequill_poem.txt")
             
 
 st.markdown("*Happy Birthday, Abasifreke 👑🎂*")
-st.markdown("*❤ & 💡: Victor Zion*")
+st.markdown("❤ & 💡: Victor Zion")
