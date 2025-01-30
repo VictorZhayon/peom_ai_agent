@@ -23,7 +23,7 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme):
     return response.choices[0].message.content.strip()
 
 # --- Streamlit UI ---
-st.set_page_config(page_title="TiaraQuill", page_icon="🎀", layout="centered")
+st.set_page_config(page_title="PristineQuill", page_icon="🎀", layout="centered")
 
 # Custom CSS for clean design
 st.markdown("""
@@ -39,8 +39,8 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- User Inputs ---
-st.title("🎀TiaraQuill")
-st.markdown("*For Tiara, for poetry—crafted one stanza at a time*")
+st.title("🎀PristineQuill")
+st.markdown("*For Pristine, for poetry—crafted one stanza at a time*")
 
 
 col1, col2 = st.columns(2)
@@ -92,5 +92,5 @@ if st.button("🖋️ Generate Poem"):
             st.download_button("Download Poem", poem, file_name="tiaraquill_poem.txt")
             
 
-st.markdown("*Happy Birthday, Tiara 👑🎂*")
+st.markdown("*Happy Birthday, Abasifreke 👑🎂*")
 st.markdown("*❤ & 💡: Victor Zion*")
