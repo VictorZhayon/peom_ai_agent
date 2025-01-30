@@ -2,7 +2,7 @@ import openai
 import streamlit as st
 
 # Initialize OpenAI client
-openai.api_key = ""
+openai.api_key = "OPEN_AI"
 
 # --- Poem Generation Function ---
 def generate_poem(theme, mood, length, poetic_form, keywords, rhyme):
@@ -39,18 +39,41 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- User Inputs ---
-st.title("🎀 TiaraQuill")
-st.markdown("*Dip into imagination. Write the extraordinary.*")
+st.title("🎀TiaraQuill")
+st.markdown("*For Tiara, for poetry—crafted one stanza at a time*")
 
 
 col1, col2 = st.columns(2)
 with col1:
-    theme = st.text_input("**Theme** (e.g., midnight rain, childhood):")
-    poetic_form = st.selectbox("**Poetic Form**", ["Sonnet", "Haiku", "Free Verse", "Limerick", "Villanelle"])
+    theme = st.text_input("**Theme** (e.g., midnight rain, childhood, sunset, etc):")
+    poetic_form = st.selectbox("**Poetic Form**", 
+                               ["Sonnet", 
+                                "Haiku", 
+                                "Limerick",
+                                "Ballad",
+                                "Free Verse", 
+                                "Villanelle",
+                                "Ode",
+                                "Elegy",
+                                "Ghazal",
+                                "Sestina",
+                               ])
     keywords = st.text_input("**Keywords** (comma-separated):")
 with col2:
-    mood = st.selectbox("**Mood**", ["Whimsical", "Melancholic", "Hopeful", "Mysterious", "Romantic"])
-    length = st.slider("**Length (lines)**", 4, 20, 12)
+    mood = st.selectbox("**Mood**", 
+                        ["Joyful/Celebratory",
+                         "Sorrowful/Melancholic", 
+                         "Reflective/Contemplative", 
+                         "Romantic/Passionate", 
+                         "Mysterious/Eerie",
+                         "Peaceful/Serene",
+                         "Angry/Outraged",
+                         "Hopeful/Optimistic",
+                         "Nostalgic/Longing",
+                         "Playful/Whimsical",
+                        ])
+    length = st.slider("**Length (lines)**", 4, 10, 6)
+    # tiara_style = st.toggle("Write with Tiara's Signature Style (metaphors, nostalgia)")
     rhyme = st.toggle("**Enable Rhyme**", value=True)
 
 # --- Generate Poem ---
@@ -69,4 +92,5 @@ if st.button("🖋️ Generate Poem"):
             st.download_button("Download Poem", poem, file_name="tiaraquill_poem.txt")
             
 
-st.markdown("*By Victor, for Tiara*")            
+st.markdown("*Happy Birthday, Tiara 👑🎂*")
+st.markdown("*❤ & 💡: Victor Zion*")
