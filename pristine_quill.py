@@ -3,7 +3,7 @@ from openai import OpenAI
 
 client = OpenAI(
   base_url="https://openrouter.ai/api/v1",
-  api_key="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",
+  api_key=st.secrets["openrouter"]["api_key"],
 )
 
 # --- Poem Generation Function ---
