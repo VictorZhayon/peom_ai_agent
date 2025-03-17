@@ -1,8 +1,11 @@
-import openai
+from openai import OpenAI
 import streamlit as st
 
 # Initialize OpenAI client
-openai.api_key = "OPEN_AI"
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key="PristineQuillApiKey",
+)
 
 # --- Poem Generation Function ---
 def generate_poem(theme, mood, length, poetic_form, keywords, rhyme):
@@ -12,13 +15,14 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme):
     {'Use a rhyme scheme.' if rhyme else 'Use free verse.'}
     Poem length: {length} lines.
     Avoid clichés. Be creative and imaginative.
+    Don't show your <think> process
     """
     
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
+    response = client.chat.completions.create(
+        model="deepseek/deepseek-r1-distill-llama-70b:free",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.7,
-        max_tokens=500
+        # temperature=0.7,
+        # max_tokens=500
     )
     return response.choices[0].message.content.strip()
 
@@ -93,4 +97,4 @@ if st.button("🖋️ Generate Poem"):
             
 
 st.markdown("*Happy Birthday, Abasifreke 👑🎂*")
-st.markdown("❤ & 💡: Victor Zion")
+st.markdown("❤ & 💡: Victor Zion") 
