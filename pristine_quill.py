@@ -1,10 +1,9 @@
-from openai import OpenAI
 import streamlit as st
+from openai import OpenAI
 
-# Initialize OpenAI client
 client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key="PristineQuillApiKey",
+  base_url="https://openrouter.ai/api/v1",
+  api_key="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",
 )
 
 # --- Poem Generation Function ---
@@ -18,13 +17,15 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme):
     Don't show your <think> process
     """
     
-    response = client.chat.completions.create(
+    completion = client.chat.completions.create(
+         extra_headers={
+                "X-Title": "PristineQuill",  # Your app name
+            },
         model="deepseek/deepseek-r1-distill-llama-70b:free",
         messages=[{"role": "user", "content": prompt}],
-        # temperature=0.7,
-        # max_tokens=500
     )
-    return response.choices[0].message.content.strip()
+    return completion.choices[0].message.content.strip()
+
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="PristineQuill", page_icon="🎀", layout="centered")
