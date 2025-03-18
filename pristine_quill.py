@@ -93,16 +93,8 @@ if st.button("🖋️ Generate Poem"):
             st.markdown("<div class='poem-box'>" + poem.replace('\n', '<br>') + "</div>", 
                         unsafe_allow_html=True)
             
-            # Ask user for custom filename
-            filename = st.text_input("Enter filename for download (without .txt):", "pristinequill_poem")
-            filename = filename.strip()
-            
-            # Ensure file has .txt extension
-            if not filename.endswith(".txt"):
-                filename += ".txt"
-            
             # Download button
-            st.download_button("Download Poem", poem, file_name=filename)
+            st.download_button("Download Poem", poem, file_name="pristinequill_poem.txt")
             
 
 st.markdown("Happy Birthday, Abasifreke 👑🎂")
