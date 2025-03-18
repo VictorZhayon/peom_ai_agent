@@ -18,7 +18,7 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme):
     """
     
     completion = client.chat.completions.create(
-         extra_headers={
+        extra_headers={
                 "X-Title": "PristineQuill",  # Your app name
             },
         model="deepseek/deepseek-r1-distill-llama-70b:free",
@@ -50,7 +50,7 @@ st.markdown("*For Pristine, for poetry—crafted one stanza at a time*")
 
 col1, col2 = st.columns(2)
 with col1:
-    theme = st.text_input("**Theme** (e.g., midnight rain, childhood, sunset, etc):")
+    theme = st.text_input("**Theme** (e.g., midnight rain, childhood, sunset, etc)")
     poetic_form = st.selectbox("**Poetic Form**", 
                                ["Sonnet", 
                                 "Haiku", 
@@ -63,7 +63,7 @@ with col1:
                                 "Ghazal",
                                 "Sestina",
                                ])
-    keywords = st.text_input("**Keywords** (comma-separated):")
+    keywords = st.text_input("**Keywords** (comma-separated)")
 with col2:
     mood = st.selectbox("**Mood**", 
                         ["Joyful/Celebratory",
@@ -77,7 +77,7 @@ with col2:
                          "Nostalgic/Longing",
                          "Playful/Whimsical",
                         ])
-    length = st.slider("**Length (lines)**", 4, 10, 6)
+    length = st.slider("**Length (lines)**", 4, 12, 6)
     # tiara_style = st.toggle("Write with Tiara's Signature Style (metaphors, nostalgia)")
     rhyme = st.toggle("**Enable Rhyme**", value=True)
 
@@ -97,5 +97,5 @@ if st.button("🖋️ Generate Poem"):
             st.download_button("Download Poem", poem, file_name="pristinequill_poem.txt")
             
 
-st.markdown("*Happy Birthday, Abasifreke 👑🎂*")
+st.markdown("Happy Birthday, Abasifreke 👑🎂")
 st.markdown("❤ & 💡: Victor Zion") 
