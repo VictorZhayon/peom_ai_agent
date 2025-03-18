@@ -51,17 +51,14 @@ st.markdown("*For Pristine, for poetry—crafted one stanza at a time*")
 col1, col2 = st.columns(2)
 with col1:
     theme = st.text_input("**Theme** (e.g., midnight rain, childhood, sunset, etc)")
+                                # 44 poetic forms
     poetic_form = st.selectbox("**Poetic Form**", 
-                               ["Sonnet", 
-                                "Haiku", 
-                                "Limerick",
-                                "Ballad",
-                                "Free Verse", 
-                                "Villanelle",
-                                "Ode",
-                                "Elegy",
-                                "Ghazal",
-                                "Sestina",
+                               [
+                                   "Acrostic", "Ballad", "Blank Verse", "Burlesque", "Canzone", "Carpe Diem", "Cinquain", "Concrete Poem",
+                                   "Couplets", "Diamante", "Double Dactyl", "Eclogue", "Elegy", "Endechas", "Epigram", "Epitaph", "Free Verse",
+                                   "Ghazal", "Haiku", "Heroic Couplet", "Horation Ode", "Idyll", "Kimo", "Limerick", "Lyric", "Madrigal",
+                                   "Masque", "Monorhyme", "Narrative Poem", "Ode", "Pantoum", "Pastoral", "Pindaric Ode", "Quatrain", "Rondeau",
+                                   "Sapphic", "Senryu", "Sestina", "Sonnet", "Tanka", "Terzanelle", "Triolet", "Villanelle", "Virelay"
                                ])
     keywords = st.text_input("**Keywords** (comma-separated)")
 with col2:
