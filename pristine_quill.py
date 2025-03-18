@@ -94,7 +94,7 @@ if st.button("🖋️ Generate Poem"):
                         unsafe_allow_html=True)
             
             # Ask user for custom filename
-            filename = st.text_input("Enter filename for download (without .txt):", "pristinequill_poem")
+            filename = st.text_input("Enter filename for download (without .txt):")
             filename = filename.strip()
             
             # Ensure file has .txt extension
