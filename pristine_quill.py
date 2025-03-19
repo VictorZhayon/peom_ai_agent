@@ -86,7 +86,7 @@ with col2:
                             "Witty", "Woeful", "Yearning", "Youthful", "Zealous"
                         ])
     
-    length = st.slider("**Length (lines)**", 4, 12, 6)
+    length = st.slider("**Length (lines)**", 4, 50, 6)
     # tiara_style = st.toggle("Write with Tiara's Signature Style (metaphors, nostalgia)")
     rhyme_scheme = st.selectbox("**Rhyme Scheme**", 
                                 [
