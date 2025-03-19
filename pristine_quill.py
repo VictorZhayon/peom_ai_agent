@@ -7,7 +7,7 @@ client = OpenAI(
 )
 
 # --- Poem Generation Function ---
-def generate_poem(theme, mood, length, poetic_form, keywords, rhyme):
+def generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme):
     prompt = f"""
     Write a {mood} poem about '{theme}' in the {poetic_form} form.
     Keywords to include: {keywords}.
