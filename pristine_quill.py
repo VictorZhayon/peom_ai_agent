@@ -63,17 +63,28 @@ with col1:
     keywords = st.text_input("**Keywords** (comma-separated)")
 with col2:
     mood = st.selectbox("**Mood**", 
-                        ["Joyful/Celebratory",
-                         "Sorrowful/Melancholic", 
-                         "Reflective/Contemplative", 
-                         "Romantic/Passionate", 
-                         "Mysterious/Eerie",
-                         "Peaceful/Serene",
-                         "Angry/Outraged",
-                         "Hopeful/Optimistic",
-                         "Nostalgic/Longing",
-                         "Playful/Whimsical",
+                        [
+                            "Adventurous", "Amused", "Angry", "Anxious", "Appreciative", "Ashamed", "Bitter", "Blissful", "Bold", "Calm", "Celebratory",
+                            "Contemplative", "Critical", "Curious", "Cynical", "Defiant", "Depressed", "Despairing",
+                            "Desperate", "Determined", "Disillusioned", "Dreamy", "Eerie", "Elated", "Embarrassed",
+                            "Empathetic", "Enthusiastic", "Envious", "Exuberant", "Fearful", "Flippant", "Frivolous",
+                            "Gloomy", "Grateful", "Guilty", "Happy", "Haunting", "Hopeful", "Humble", "Humorous",
+                            "Hurt", "Hypnotic", "Imaginative", "Inquisitive", "Insistent", "Inspiring", "Ironic",
+                            "Joyful", "Jubilant", "Lonely", "Longing", "Lyrical", "Melancholic", "Melodramatic",
+                            "Mellow", "Moody", "Morose", "Mournful", "Mystical", "Nostalgic", "Optimistic", "Outrageous",
+                            "Overwhelming", "Passionate", "Peaceful", "Pensive", "Playful", "Pleading", "Poignant",
+                            "Proud", "Provocative", "Puzzled", "Quirky", "Rebellious", "Reflective", "Regretful",
+                            "Relaxed", "Relentless", "Reminiscent", "Repentant", "Resigned", "Resolute", "Reverent",
+                            "Rhapsodic", "Romantic", "Sad", "Sarcastic", "Satirical", "Scornful", "Sensitive", "Sentimental",
+                            "Serious", "Sighing", "Silly", "Sincere", "Skeptical", "Sorrowful", "Soulful", "Somber",
+                            "Sophisticated", "Spiritual", "Stirring", "Stormy", "Strange", "Stubborn", "Subdued",
+                            "Sudden", "Sugary", "Sulky", "Suspenseful", "Sympathetic", "Tense", "Tentative", "Terse",
+                            "Thankful", "Thoughtful", "Threatening", "Timid", "Tranquil", "Triumphant", "Troubled",
+                            "Trusting", "Unafraid", "Uncertain", "Unconventional", "Unhappy", "Unnerving", "Unsettling",
+                            "Unwavering", "Uplifting", "Vehement", "Vigilant", "Violent", "Vivid", "Wary", "Wistful",
+                            "Witty", "Woeful", "Yearning", "Youthful", "Zealous"
                         ])
+    
     length = st.slider("**Length (lines)**", 4, 12, 6)
     # tiara_style = st.toggle("Write with Tiara's Signature Style (metaphors, nostalgia)")
     rhyme = st.toggle("**Enable Rhyme**", value=True)
