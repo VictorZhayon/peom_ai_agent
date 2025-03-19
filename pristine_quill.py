@@ -11,7 +11,7 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme):
     prompt = f"""
     Write a {mood} poem about '{theme}' in the {poetic_form} form.
     Keywords to include: {keywords}.
-    {'Use a rhyme scheme.' if rhyme else 'Use free verse.'}
+    {'Use a rhyme scheme.' + rhyme_scheme if rhyme_scheme != 'Free Verse' else 'Use free verse.'}
     Poem length: {length} lines.
     Avoid clichés. Be creative and imaginative.
     Don't show your <think> process
@@ -62,6 +62,7 @@ with col1:
                                ])
     keywords = st.text_input("**Keywords** (comma-separated)")
 with col2:
+    # 140 moods
     mood = st.selectbox("**Mood**", 
                         [
                             "Adventurous", "Amused", "Angry", "Anxious", "Appreciative", "Ashamed", "Bitter", "Blissful", "Bold", "Calm", "Celebratory",
@@ -87,7 +88,13 @@ with col2:
     
     length = st.slider("**Length (lines)**", 4, 12, 6)
     # tiara_style = st.toggle("Write with Tiara's Signature Style (metaphors, nostalgia)")
-    rhyme = st.toggle("**Enable Rhyme**", value=True)
+    rhyme_scheme = st.selectbox("**Rhyme Scheme**", 
+                                [
+                                     
+                                    "Free Verse", "Alliterative Rhyme", "Alternate Rhyme", "Assonance", "Consonance", "Couplet Rhyme", 
+                                    "Enclosed Rhyme", "End Rhyme", "Eye Rhyme", "Feminine Rhyme", "Half Rhyme", "Internal Rhyme", 
+                                    "Monorhyme", "Perfect Rhyme", "Slant Rhyme", "Triplet Rhyme", "Wrenched Rhyme", "Rhyme Royal",
+                                ])
 
 # --- Generate Poem ---
 if st.button("🖋️ Generate Poem"):
@@ -95,7 +102,7 @@ if st.button("🖋️ Generate Poem"):
         st.error("Please enter a theme!")
     else:
         with st.spinner("Crafting your poem..."):
-            poem = generate_poem(theme, mood, length, poetic_form, keywords, rhyme)
+            poem = generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme)
             
             # Display poem
             st.markdown("<div class='poem-box'>" + poem.replace('\n', '<br>') + "</div>", 
