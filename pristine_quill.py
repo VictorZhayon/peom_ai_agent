@@ -1,13 +1,29 @@
 import streamlit as st
 from openai import OpenAI
+import re
 
 client = OpenAI(
   base_url="https://openrouter.ai/api/v1",
   api_key=st.secrets["openrouter"]["api_key"],
 )
 
+# Sanitize and validate user input
+def sanitize_input(text, max_length=500):
+    # Remove leading/trailing whitespace and limit length
+    sanitized_text = text.strip()[:max_length]
+    # Remove potentially harmful characters (e.g., control characters)
+    sanitized_text = re.sub(r'[^\w\s.,!?\'"-]', '', sanitized_text)
+    return sanitized_text
+
 # --- Poem Generation Function ---
 def generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme):
+    # Sanitize inputs
+    theme = sanitize_input(theme, max_length=100)
+    keywords = sanitize_input(keywords, max_length=200)
+    poetic_form = sanitize_input(poetic_form, max_length=50)
+    mood = sanitize_input(mood, max_length=50)
+    rhyme_scheme = sanitize_input(rhyme_scheme, max_length=50)
+
     prompt = f"""
     Write a {mood} poem about '{theme}' in the {poetic_form} form.
     Keywords to include: {keywords}.
@@ -28,6 +44,9 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme):
 
 # --- Poem Analysis Function ---
 def analyze_poem(poem_text):
+    # Sanitize input
+    poem_text = sanitize_input(poem_text, max_length=2000)
+
     prompt = f"""
     Analyze the following poem and provide the following details:
     - Mood
