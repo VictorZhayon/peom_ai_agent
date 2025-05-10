@@ -26,6 +26,28 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme):
     )
     return completion.choices[0].message.content.strip()
 
+# --- Poem Analysis Function ---
+def analyze_poem(poem_text):
+    prompt = f"""
+    Analyze the following poem and provide the following details:
+    - Mood
+    - Theme
+    - Poetic form
+    - Rhyme scheme
+    - Length (number of lines)
+    
+    Poem:
+    {poem_text}
+    """
+    
+    completion = client.chat.completions.create(
+        extra_headers={
+                "X-Title": "PristineQuillAnalysis",  # Your app name
+            },
+        model="deepseek/deepseek-r1-distill-llama-70b:free",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return completion.choices[0].message.content.strip()
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="PristineQuill", page_icon="🎀", layout="centered")
@@ -47,11 +69,11 @@ st.markdown("""
 st.title("🎀PristineQuill")
 st.markdown("*For Pristine, for poetry—crafted one stanza at a time*")
 
-
+# Poem Generation Section
+st.header("Generate a Poem")
 col1, col2 = st.columns(2)
 with col1:
     theme = st.text_input("**Theme** (e.g., midnight rain, childhood, sunset, etc)")
-                                # 44 poetic forms
     poetic_form = st.selectbox("**Poetic Form**", 
                                [
                                    "Acrostic", "Ballad", "Blank Verse", "Burlesque", "Canzone", "Carpe Diem", "Cinquain", "Concrete Poem",
@@ -62,7 +84,6 @@ with col1:
                                ])
     keywords = st.text_input("**Keywords** (comma-separated)")
 with col2:
-    # 140 moods
     mood = st.selectbox("**Mood**", 
                         [
                             "Adventurous", "Amused", "Angry", "Anxious", "Appreciative", "Ashamed", "Bitter", "Blissful", "Bold", "Calm", "Celebratory",
@@ -85,32 +106,29 @@ with col2:
                             "Unwavering", "Uplifting", "Vehement", "Vigilant", "Violent", "Vivid", "Wary", "Wistful",
                             "Witty", "Woeful", "Yearning", "Youthful", "Zealous"
                         ])
-    
     length = st.slider("**Length (lines)**", 4, 50, 6)
-    # tiara_style = st.toggle("Write with Tiara's Signature Style (metaphors, nostalgia)")
     rhyme_scheme = st.selectbox("**Rhyme Scheme**", 
                                 [
-                                     
                                     "Free Verse", "Alliterative Rhyme", "Alternate Rhyme", "Assonance", "Consonance", "Couplet Rhyme", 
                                     "Enclosed Rhyme", "End Rhyme", "Eye Rhyme", "Feminine Rhyme", "Half Rhyme", "Internal Rhyme", 
                                     "Monorhyme", "Perfect Rhyme", "Slant Rhyme", "Triplet Rhyme", "Wrenched Rhyme", "Rhyme Royal",
                                 ])
 
-# --- Generate Poem ---
 if st.button("🖋️ Generate Poem"):
     if not theme:
         st.error("Please enter a theme!")
     else:
         with st.spinner("Crafting your poem..."):
             poem = generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme)
-            
-            # Display poem
-            st.markdown("<div class='poem-box'>" + poem.replace('\n', '<br>') + "</div>", 
-                        unsafe_allow_html=True)
-            
-            # Download button
+            st.markdown("<div class='poem-box'>" + poem.replace('\n', '<br>') + "</div>", unsafe_allow_html=True)
             st.download_button("Download Poem", poem, file_name="pristinequill_poem.txt")
-            
 
-st.markdown("Happy Birthday, Abasifreke 👑🎂")
-st.markdown("❤ & 💡: Victor Zion") 
+# Poem Analysis Section
+st.header("Analyze an Uploaded Poem")
+uploaded_file = st.file_uploader("Upload a poem (text file)", type=["txt"])
+if uploaded_file is not None:
+    poem_text = uploaded_file.read().decode("utf-8")
+    with st.spinner("Analyzing your poem..."):
+        analysis = analyze_poem(poem_text)
+        st.markdown("### Analysis Results")
+        st.text(analysis)
