@@ -3,7 +3,7 @@ from openai import OpenAI
 import re
 
 client = OpenAI(
-  base_url="https://openrouter.ai/api/v1",
+  base_url=st.secrets["openrouter_url"]['base_url'],
   api_key=st.secrets["openrouter"]["api_key"],
 )
 
