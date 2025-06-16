@@ -69,7 +69,7 @@ def analyze_poem(poem_text):
     return completion.choices[0].message.content.strip()
 
 # --- Streamlit UI ---
-st.set_page_config(page_title="PristineQuill", page_icon="🎀", layout="centered")
+st.set_page_config(page_title="AI Poem Generator", page_icon="🎀", layout="centered")
 
 # Custom CSS for clean design
 st.markdown("""
@@ -85,8 +85,8 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- User Inputs ---
-st.title("🎀PristineQuill")
-st.markdown("*For Pristine, for poetry—crafted one stanza at a time*")
+st.title("🎀 AI Poem Generator")
+st.markdown("*For poetry—crafted one stanza at a time*")
 
 # Poem Generation Section
 st.header("Generate a Poem")
@@ -140,7 +140,7 @@ if st.button("🖋️ Generate Poem"):
         with st.spinner("Crafting your poem..."):
             poem = generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme)
             st.markdown("<div class='poem-box'>" + poem.replace('\n', '<br>') + "</div>", unsafe_allow_html=True)
-            st.download_button("Download Poem", poem, file_name="pristinequill_poem.txt")
+            st.download_button("Download Poem", poem, file_name="generated_poem.txt")
 
 # Poem Analysis Section
 st.header("Analyze an Uploaded Poem")
