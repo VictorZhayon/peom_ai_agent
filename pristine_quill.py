@@ -37,7 +37,7 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme):
         extra_headers={
                 "X-Title": "PristineQuill",  # Your app name
             },
-        model="deepseek/deepseek-r1-distill-llama-70b:free",
+        model="meta-llama/llama-3.2-3b-instruct:free",
         messages=[{"role": "user", "content": prompt}],
     )
     return completion.choices[0].message.content.strip()
