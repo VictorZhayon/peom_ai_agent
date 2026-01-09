@@ -3,13 +3,15 @@ from openai import OpenAI
 import re
 
 client = OpenAI(
-    base_url=st.secrets["openrouter_url"]['base_url'],
-    api_key=st.secrets["openrouter"]["api_key"],
+  base_url=st.secrets["openrouter_url"]['base_url'],
+  api_key=st.secrets["openrouter"]["api_key"],
 )
 
 # Sanitize and validate user input
 def sanitize_input(text, max_length=500):
+    # Remove leading/trailing whitespace and limit length
     sanitized_text = text.strip()[:max_length]
+    # Remove potentially harmful characters (e.g., control characters)
     sanitized_text = re.sub(r'[^\w\s.,!?\'"-]', '', sanitized_text)
     return sanitized_text
 
@@ -33,16 +35,17 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme):
     
     try:
         completion = client.chat.completions.create(
-            extra_headers={"X-Title": "PristineQuill"},  # App name
+            extra_headers={"X-Title": "PristineQuill"},  # Your app name
             model="meta-llama/llama-3.2-3b-instruct:free",
             messages=[{"role": "user", "content": prompt}],
         )
         return completion.choices[0].message.content.strip()
     except Exception as e:
         return "⚠️ PristineQuill is temporarily unavailable. Please try again later."
-
+     
 # --- Poem Analysis Function ---
 def analyze_poem(poem_text):
+    # Sanitize input
     poem_text = sanitize_input(poem_text, max_length=2000)
 
     prompt = f"""
@@ -57,19 +60,19 @@ def analyze_poem(poem_text):
     {poem_text}
     """
     
-    try:
-        completion = client.chat.completions.create(
-            extra_headers={"X-Title": "PristineQuillAnalysis"},
-            model="deepseek/deepseek-r1-distill-llama-70b:free",
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return completion.choices[0].message.content.strip()
-    except Exception as e:
-        return "⚠️ Analysis service is temporarily unavailable. Please try again later."
+    completion = client.chat.completions.create(
+        extra_headers={
+                "X-Title": "PristineQuillAnalysis",  # Your app name
+            },
+        model="deepseek/deepseek-r1-distill-llama-70b:free",
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return completion.choices[0].message.content.strip()
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="PristineQuill", page_icon="🎀", layout="centered")
 
+# Custom CSS for clean design
 st.markdown("""
     <style>
     .stTextInput input, .stSelectbox, .stSlider { border-radius: 10px !important; }
@@ -80,23 +83,56 @@ st.markdown("""
         font-family: 'Georgia', serif;
     }
     </style>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
+# --- User Inputs ---
 st.title("🎀 PristineQuill")
 st.markdown("*For poetry—crafted one stanza at a time*")
 
-# --- Poem Generation Section ---
+# Poem Generation Section
 st.header("Generate a Poem")
 col1, col2 = st.columns(2)
 with col1:
     theme = st.text_input("**Theme** (e.g., midnight rain, childhood, sunset, etc)")
-    poetic_form = st.selectbox("**Poetic Form**", ["Acrostic", "Ballad", "Blank Verse", "Burlesque", "Free Verse", "Haiku", "Sonnet", "Villanelle"])
+    poetic_form = st.selectbox("**Poetic Form**", 
+                               [
+                                   "Acrostic", "Ballad", "Blank Verse", "Burlesque", "Canzone", "Carpe Diem", "Cinquain", "Concrete Poem",
+                                   "Couplets", "Diamante", "Double Dactyl", "Eclogue", "Elegy", "Endechas", "Epigram", "Epitaph", "Free Verse",
+                                   "Ghazal", "Haiku", "Heroic Couplet", "Horation Ode", "Idyll", "Kimo", "Limerick", "Lyric", "Madrigal",
+                                   "Masque", "Monorhyme", "Narrative Poem", "Ode", "Pantoum", "Pastoral", "Pindaric Ode", "Quatrain", "Rondeau",
+                                   "Sapphic", "Senryu", "Sestina", "Sonnet", "Tanka", "Terzanelle", "Triolet", "Villanelle", "Virelay"
+                               ])
     keywords = st.text_input("**Keywords** (comma-separated)")
 with col2:
-    mood = st.selectbox("**Mood**", ["Joyful", "Melancholic", "Reflective", "Romantic", "Mysterious", "Peaceful"])
+    mood = st.selectbox("**Mood**", 
+                        [
+                            "Adventurous", "Amused", "Angry", "Anxious", "Appreciative", "Ashamed", "Bitter", "Blissful", "Bold", "Calm", "Celebratory",
+                            "Contemplative", "Critical", "Curious", "Cynical", "Defiant", "Depressed", "Despairing",
+                            "Desperate", "Determined", "Disillusioned", "Dreamy", "Eerie", "Elated", "Embarrassed",
+                            "Empathetic", "Enthusiastic", "Envious", "Exuberant", "Fearful", "Flippant", "Frivolous",
+                            "Gloomy", "Grateful", "Guilty", "Happy", "Haunting", "Hopeful", "Humble", "Humorous",
+                            "Hurt", "Hypnotic", "Imaginative", "Inquisitive", "Insistent", "Inspiring", "Ironic",
+                            "Joyful", "Jubilant", "Lonely", "Longing", "Lyrical", "Melancholic", "Melodramatic",
+                            "Mellow", "Moody", "Morose", "Mournful", "Mystical", "Nostalgic", "Optimistic", "Outrageous",
+                            "Overwhelming", "Passionate", "Peaceful", "Pensive", "Playful", "Pleading", "Poignant",
+                            "Proud", "Provocative", "Puzzled", "Quirky", "Rebellious", "Reflective", "Regretful",
+                            "Relaxed", "Relentless", "Reminiscent", "Repentant", "Resigned", "Resolute", "Reverent",
+                            "Rhapsodic", "Romantic", "Sad", "Sarcastic", "Satirical", "Scornful", "Sensitive", "Sentimental",
+                            "Serious", "Sighing", "Silly", "Sincere", "Skeptical", "Sorrowful", "Soulful", "Somber",
+                            "Sophisticated", "Spiritual", "Stirring", "Stormy", "Strange", "Stubborn", "Subdued",
+                            "Sudden", "Sugary", "Sulky", "Suspenseful", "Sympathetic", "Tense", "Tentative", "Terse",
+                            "Thankful", "Thoughtful", "Threatening", "Timid", "Tranquil", "Triumphant", "Troubled",
+                            "Trusting", "Unafraid", "Uncertain", "Unconventional", "Unhappy", "Unnerving", "Unsettling",
+                            "Unwavering", "Uplifting", "Vehement", "Vigilant", "Violent", "Vivid", "Wary", "Wistful",
+                            "Witty", "Woeful", "Yearning", "Youthful", "Zealous"
+                        ])
     length = st.slider("**Length (lines)**", 4, 50, 6)
-    rhyme_scheme = st.selectbox("**Rhyme Scheme**", ["Free Verse", "Alternate Rhyme", "Couplet Rhyme", "Perfect Rhyme"])
-    file_name_input = st.text_input("**Download file name** (without extension)", value="pristinequill")
+    rhyme_scheme = st.selectbox("**Rhyme Scheme**", 
+                                [
+                                    "Free Verse", "Alliterative Rhyme", "Alternate Rhyme", "Assonance", "Consonance", "Couplet Rhyme", 
+                                    "Enclosed Rhyme", "End Rhyme", "Eye Rhyme", "Feminine Rhyme", "Half Rhyme", "Internal Rhyme", 
+                                    "Monorhyme", "Perfect Rhyme", "Slant Rhyme", "Triplet Rhyme", "Wrenched Rhyme", "Rhyme Royal",
+                                ])
 
 if st.button("🖋️ Generate Poem"):
     if not theme:
@@ -105,10 +141,9 @@ if st.button("🖋️ Generate Poem"):
         with st.spinner("Crafting your poem..."):
             poem = generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme)
             st.markdown("<div class='poem-box'>" + poem.replace('\n', '<br>') + "</div>", unsafe_allow_html=True)
-            download_name = file_name_input.strip() + ".txt"
-            st.download_button("Download Poem", poem, file_name=download_name)
+            st.download_button("Download Poem", poem, file_name="pristinequill.txt")
 
-# --- Poem Analysis Section ---
+# Poem Analysis Section
 st.header("Analyze an Uploaded Poem")
 uploaded_file = st.file_uploader("Upload a poem (text file)", type=["txt"])
 if uploaded_file is not None:
