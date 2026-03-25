@@ -30,7 +30,7 @@ ANALYSIS_MODELS = [
 ]
 
 def call_with_fallback(prompt, models, extra_header_title):
-    """Try each model in order, falling back on 429 rate limit errors."""
+    """Try each model in order, falling back on 429 or empty responses."""
     last_error = None
     for model in models:
         try:
@@ -39,6 +39,15 @@ def call_with_fallback(prompt, models, extra_header_title):
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
             )
+            # Guard against None or empty choices
+            if (
+                completion is None
+                or not completion.choices
+                or completion.choices[0].message is None
+                or completion.choices[0].message.content is None
+            ):
+                last_error = f"Model '{model}' returned an empty response."
+                continue  # Try next model
             return completion.choices[0].message.content.strip(), None, model
         except Exception as e:
             last_error = str(e)
