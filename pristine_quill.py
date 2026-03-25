@@ -36,7 +36,7 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme):
     try:
         completion = client.chat.completions.create(
             extra_headers={"X-Title": "PristineQuill"},  # Your app name
-            model="meta-llama/llama-3.2-3b-instruct:free",
+            model="meta-llama/llama-3.3-70b-instruct:free",
             messages=[{"role": "user", "content": prompt}],
         )
         return completion.choices[0].message.content.strip()
