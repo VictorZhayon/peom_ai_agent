@@ -235,7 +235,7 @@ if st.button("🖋️ Generate Poem"):
         if poem_chunks:
             full_poem = "".join(poem_chunks)
             if used_model:
-            st.download_button("📥 Download Poem", full_poem, file_name="pristinequill.txt")
+                st.download_button("📥 Download Poem", full_poem, file_name="pristinequill.txt")
 
 # --- Poem Analysis Section ---
 st.header("Analyze an Uploaded Poem")
