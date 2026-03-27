@@ -2,11 +2,15 @@ import streamlit as st
 from openai import OpenAI
 import re
 
-# --- Client Setup ---
-client = OpenAI(
-    base_url=st.secrets["openrouter_url"]["base_url"],
-    api_key=st.secrets["openrouter"]["api_key"],
-)
+# --- Client Setup (cached so it's only created once per session) ---
+@st.cache_resource
+def get_client():
+    return OpenAI(
+        base_url=st.secrets["openrouter_url"]["base_url"],
+        api_key=st.secrets["openrouter"]["api_key"],
+    )
+
+client = get_client()
 
 # --- Input Sanitization ---
 def sanitize_input(text, max_length=500):
@@ -16,7 +20,6 @@ def sanitize_input(text, max_length=500):
 
 # --- Model Fallback Lists ---
 # openrouter/free auto-picks any available free model — best first choice.
-# Named models are fallbacks in case the router itself is unavailable.
 GENERATION_MODELS = [
     "openrouter/free",
     "meta-llama/llama-3.3-70b-instruct:free",
@@ -36,8 +39,40 @@ ANALYSIS_MODELS = [
 # Error codes that mean "this model is unavailable, try the next one"
 RETRYABLE_CODES = ("429", "404", "503", "529")
 
+# --- Streaming Poem Generation ---
+def stream_poem(prompt, models):
+    """
+    Try each model with streaming. Yields text chunks as they arrive.
+    Yields a special dict on error: {"error": "..."}.
+    Yields {"model": "..."} as the first item on success so the caller
+    knows which model responded.
+    """
+    last_error = None
+    for model in models:
+        try:
+            stream = client.chat.completions.create(
+                extra_headers={"X-Title": "PristineQuill"},
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                stream=True,
+                max_tokens=600,  # Poems don't need more — caps latency
+            )
+            yield {"model": model}
+            for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if delta and delta.content:
+                    yield delta.content
+            return  # Success — stop here
+        except Exception as e:
+            last_error = str(e)
+            if any(code in str(e) for code in RETRYABLE_CODES):
+                continue  # Try next model
+            else:
+                break
+    yield {"error": last_error or "All models failed."}
+
+# --- Non-streaming Analysis (analysis is read once, streaming less useful) ---
 def call_with_fallback(prompt, models, extra_header_title):
-    """Try each model in order, falling back on rate limits or unavailable endpoints."""
     last_error = None
     for model in models:
         try:
@@ -45,8 +80,8 @@ def call_with_fallback(prompt, models, extra_header_title):
                 extra_headers={"X-Title": extra_header_title},
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
+                max_tokens=400,
             )
-            # Guard against None or empty choices
             if (
                 completion is None
                 or not completion.choices
@@ -54,18 +89,18 @@ def call_with_fallback(prompt, models, extra_header_title):
                 or completion.choices[0].message.content is None
             ):
                 last_error = f"Model '{model}' returned an empty response."
-                continue  # Try next model
+                continue
             return completion.choices[0].message.content.strip(), None, model
         except Exception as e:
             last_error = str(e)
             if any(code in str(e) for code in RETRYABLE_CODES):
-                continue  # Unavailable or rate limited — try next model
+                continue
             else:
-                break  # Auth error or other unrecoverable — stop immediately
+                break
     return None, last_error, None
 
-# --- Poem Generation ---
-def generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme):
+# --- Poem Generation prompt builder ---
+def build_poem_prompt(theme, mood, length, poetic_form, keywords, rhyme_scheme):
     theme = sanitize_input(theme, max_length=100)
     keywords = sanitize_input(keywords, max_length=200)
     poetic_form = sanitize_input(poetic_form, max_length=50)
@@ -78,23 +113,17 @@ def generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme):
         else "Use free verse."
     )
 
-    prompt = f"""
-Write a {mood} poem about '{theme}' in the {poetic_form} form.
+    return f"""Write a {mood} poem about '{theme}' in the {poetic_form} form.
 Keywords to include: {keywords}.
 {rhyme_instruction}
 Poem length: {length} lines.
 Avoid clichés. Be creative and imaginative.
-Do not show your thinking process or any preamble — output only the poem.
-"""
-
-    return call_with_fallback(prompt, GENERATION_MODELS, "PristineQuill")
+Output only the poem — no title, no preamble, no commentary."""
 
 # --- Poem Analysis ---
 def analyze_poem(poem_text):
     poem_text = sanitize_input(poem_text, max_length=2000)
-
-    prompt = f"""
-Analyze the following poem and provide:
+    prompt = f"""Analyze the following poem and provide:
 - Mood
 - Theme
 - Poetic form
@@ -102,9 +131,7 @@ Analyze the following poem and provide:
 - Length (number of lines)
 
 Poem:
-{poem_text}
-"""
-
+{poem_text}"""
     return call_with_fallback(prompt, ANALYSIS_MODELS, "PristineQuillAnalysis")
 
 # --- Page Config ---
@@ -120,6 +147,7 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         font-family: 'Georgia', serif;
         line-height: 1.8;
+        white-space: pre-wrap;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -183,16 +211,31 @@ if st.button("🖋️ Generate Poem"):
     if not theme:
         st.error("Please enter a theme!")
     else:
-        with st.spinner("Crafting your poem..."):
-            poem, error, used_model = generate_poem(theme, mood, length, poetic_form, keywords, rhyme_scheme)
-            if error:
-                st.error(f"All models failed. Last error: {error}")
-            elif poem:
-                st.markdown(
-                    "<div class='poem-box'>" + poem.replace("\n", "<br>") + "</div>",
+        prompt = build_poem_prompt(theme, mood, length, poetic_form, keywords, rhyme_scheme)
+        poem_chunks = []
+        used_model = None
+        poem_placeholder = st.empty()
+
+        for chunk in stream_poem(prompt, GENERATION_MODELS):
+            if isinstance(chunk, dict):
+                if "error" in chunk:
+                    st.error(f"All models failed. Last error: {chunk['error']}")
+                    break
+                elif "model" in chunk:
+                    used_model = chunk["model"]
+            else:
+                poem_chunks.append(chunk)
+                # Re-render the poem box with each new chunk
+                current_text = "".join(poem_chunks)
+                poem_placeholder.markdown(
+                    "<div class='poem-box'>" + current_text.replace("\n", "<br>") + "</div>",
                     unsafe_allow_html=True,
                 )
-                st.download_button("📥 Download Poem", poem, file_name="pristinequill.txt")
+
+        if poem_chunks:
+            full_poem = "".join(poem_chunks)
+            if used_model:
+            st.download_button("📥 Download Poem", full_poem, file_name="pristinequill.txt")
 
 # --- Poem Analysis Section ---
 st.header("Analyze an Uploaded Poem")
