@@ -15,22 +15,29 @@ def sanitize_input(text, max_length=500):
     return sanitized
 
 # --- Model Fallback Lists ---
+# openrouter/free auto-picks any available free model — best first choice.
+# Named models are fallbacks in case the router itself is unavailable.
 GENERATION_MODELS = [
+    "openrouter/free",
     "meta-llama/llama-3.3-70b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
+    "deepseek/deepseek-v3-base:free",
     "google/gemma-3-12b-it:free",
     "qwen/qwen3-8b:free",
 ]
 
 ANALYSIS_MODELS = [
-    "deepseek/deepseek-r1-distill-llama-70b:free",
-    "mistralai/mistral-7b-instruct:free",
+    "openrouter/free",
+    "deepseek/deepseek-r1:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
     "google/gemma-3-12b-it:free",
     "qwen/qwen3-8b:free",
 ]
 
+# Error codes that mean "this model is unavailable, try the next one"
+RETRYABLE_CODES = ("429", "404", "503", "529")
+
 def call_with_fallback(prompt, models, extra_header_title):
-    """Try each model in order, falling back on 429 or empty responses."""
+    """Try each model in order, falling back on rate limits or unavailable endpoints."""
     last_error = None
     for model in models:
         try:
@@ -51,10 +58,10 @@ def call_with_fallback(prompt, models, extra_header_title):
             return completion.choices[0].message.content.strip(), None, model
         except Exception as e:
             last_error = str(e)
-            if "429" in str(e):
-                continue  # Rate limited — try next model
+            if any(code in str(e) for code in RETRYABLE_CODES):
+                continue  # Unavailable or rate limited — try next model
             else:
-                break  # Other error — stop immediately
+                break  # Auth error or other unrecoverable — stop immediately
     return None, last_error, None
 
 # --- Poem Generation ---
