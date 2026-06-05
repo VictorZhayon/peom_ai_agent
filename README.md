@@ -1,28 +1,55 @@
-﻿# PristineQuill
+# Volta — AI Poetry
 
-PristineQuill is am AI-powered poetry generation app created by Victor, designed to craft beautiful poems one stanza at a time.
+An AI-powered poetry generation and analysis app built with FastAPI and Vanilla JS.
 
-## Poem Generation Function
+## Features
 
-The `generate_poem` function takes in various parameters such as theme, mood, length, poetic form, keywords, and rhyme to generate a unique poem using the OpenAI API. It constructs a prompt based on the input parameters and then uses the GPT-4 language model to generate a poem based on that prompt. The generated poem is returned as the output.
+- **Poem generation** — choose theme, mood, poetic form, rhyme scheme, and length
+- **Streaming output** — poem streams in live as it's written
+- **Auto-title** — a title is suggested for every generated poem
+- **Poem analysis** — paste or upload a poem to get mood, theme, form, and rhyme breakdown
+- **Session history** — last 8 poems saved for the session
+- **Random inspiration** — randomize all parameters with one click
+- **Copy & Download** — copy to clipboard or save as `.txt`
 
-## Streamlit UI
+## Stack
 
-The Streamlit User Interface allows users to interact with PristineQuill and generate custom poems. Users can input the theme, mood, length, poetic form, keywords, and choose whether to enable rhyme within the poem. The UI is designed for ease of use and aesthetic appeal.
+- **Backend** — FastAPI + Python
+- **Frontend** — Vanilla JS + CSS (no frameworks)
+- **Models** — Google Gemini 2.0 Flash → 1.5 Flash → 1.5 Pro
+- **Streaming** — Server-Sent Events via `fetch` ReadableStream
 
-### Custom CSS Styling
+## Setup
 
-The UI elements are customized using CSS to provide a clean and elegant design. Input fields, select boxes, and sliders have a border-radius of 10px for a rounded look. The poem box has padding, a border-radius, a box shadow, and a specific font style to enhance the reading experience.
+**1. Clone and create a virtual environment**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-### User Inputs
+**2. Configure API keys**
+```bash
+cp .env.example .env
+```
+Edit `.env` and add your key:
+- `GOOGLE_AI_API_KEY` — from [Google AI Studio](https://aistudio.google.com/app/apikey) (free tier available)
 
-1. **Theme**: Users can input a theme for the poem (e.g., midnight rain, childhood, sunset, etc).
-2. **Poetic Form**: Users can select a poetic form for the poem, such as Sonnet, Haiku, Limerick, Ballad, Free Verse, Villanelle, Ode, Elegy, Ghazal, or Sestina.
-3. **Keywords**: Users can input keywords separated by commas to be included in the poem.
-4. **Mood**: Users can select the mood of the poem from options like Joyful/Celebratory, Sorrowful/Melancholic, Reflective/Contemplative, Romantic/Passionate, Mysterious/Eerie, Peaceful/Serene, Angry/Outraged, Hopeful/Optimistic, Nostalgic/Longing, and Playful/Whimsical.
-5. **Length (lines)**: Users can adjust the length of the poem by selecting the number of lines desired.
-6. **Enable Rhyme**: Users can toggle this option to enable or disable rhyme within the poem.
+**3. Run**
+```bash
+uvicorn main:app --reload
+```
+Open [http://localhost:8000](http://localhost:8000).
 
-### Generate Poem
+## Project Structure
 
-When the "Generate Poem" button is clicked, the input parameters are validated, and if the theme is provided, the poem generation process begins. A loading spinner indicates that the poem is being crafted, and once generated, the poem is displayed in a styled box on the UI. Users can also download the generated poem as a text file using the "Download Poem" button.
+```
+main.py              # FastAPI app — generation, title, analysis endpoints
+templates/
+  index.html         # Single-page UI
+static/
+  style.css          # Dark theme, gold accents
+  app.js             # Streaming, history, copy/download, random
+.env.example         # API key template
+requirements.txt
+```

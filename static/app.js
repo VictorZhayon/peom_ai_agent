@@ -4,6 +4,7 @@
 const history = [];
 let currentPoem = '';
 let currentTheme = '';
+let currentTitle = '';
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const form         = document.getElementById('poem-form');
@@ -12,14 +13,17 @@ const randomBtn    = document.getElementById('random-btn');
 const lengthInput  = document.getElementById('length');
 const lengthDisplay= document.getElementById('length-display');
 
-const poemCard     = document.getElementById('poem-card');
-const emptyState   = document.getElementById('empty-state');
-const loadingState = document.getElementById('loading-state');
-const poemText     = document.getElementById('poem-text');
-const poemActions  = document.getElementById('poem-actions');
-const modelBadge   = document.getElementById('model-badge');
-const copyBtn      = document.getElementById('copy-btn');
-const downloadBtn  = document.getElementById('download-btn');
+const poemCard        = document.getElementById('poem-card');
+const emptyState      = document.getElementById('empty-state');
+const loadingState    = document.getElementById('loading-state');
+const poemTitleWrap   = document.getElementById('poem-title-wrap');
+const poemTitleLoading= document.getElementById('poem-title-loading');
+const poemTitleEl     = document.getElementById('poem-title');
+const poemText        = document.getElementById('poem-text');
+const poemActions     = document.getElementById('poem-actions');
+const modelBadge      = document.getElementById('model-badge');
+const copyBtn         = document.getElementById('copy-btn');
+const downloadBtn     = document.getElementById('download-btn');
 
 const analyzeToggle= document.getElementById('analyze-toggle');
 const analyzePanel = document.getElementById('analyze-panel');
@@ -91,14 +95,17 @@ function showEmpty() {
   poemCard.className = 'poem-card state-empty';
   emptyState.style.display = '';
   loadingState.style.display = 'none';
+  poemTitleWrap.style.display = 'none';
   poemText.style.display = 'none';
   poemActions.style.display = 'none';
+  currentTitle = '';
 }
 
 function showLoading() {
   poemCard.className = 'poem-card state-active';
   emptyState.style.display = 'none';
   loadingState.style.display = '';
+  poemTitleWrap.style.display = 'none';
   poemText.style.display = 'none';
   poemActions.style.display = 'none';
 }
@@ -118,10 +125,45 @@ function startStreaming() {
   poemCard.className = 'poem-card state-active';
   emptyState.style.display = 'none';
   loadingState.style.display = 'none';
+  poemTitleWrap.style.display = 'none';
   poemText.style.display = '';
   poemText.textContent = '';
   poemText.classList.add('streaming');
   poemActions.style.display = 'none';
+}
+
+function showTitleLoading() {
+  poemTitleEl.textContent = '';
+  poemTitleEl.classList.remove('visible');
+  poemTitleLoading.style.display = 'flex';
+  poemTitleWrap.style.display = '';
+}
+
+function showTitle(title) {
+  poemTitleLoading.style.display = 'none';
+  poemTitleEl.textContent = title;
+  // Trigger transition on next frame
+  requestAnimationFrame(() => poemTitleEl.classList.add('visible'));
+}
+
+async function fetchTitle(poem) {
+  showTitleLoading();
+  try {
+    const res = await fetch('/title', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ poem }),
+    });
+    const data = await res.json();
+    if (data.title) {
+      currentTitle = data.title;
+      showTitle(data.title);
+    } else {
+      poemTitleWrap.style.display = 'none';
+    }
+  } catch {
+    poemTitleWrap.style.display = 'none';
+  }
 }
 
 // ── Poem generation ────────────────────────────────────────────────────────
@@ -176,6 +218,7 @@ form.addEventListener('submit', async (e) => {
         if (raw === '[DONE]') {
           showPoem(currentPoem, usedModel);
           addToHistory(currentPoem, currentTheme, payload.mood, payload.poetic_form);
+          fetchTitle(currentPoem);
           return;
         }
         let parsed;
@@ -236,11 +279,14 @@ copyBtn.addEventListener('click', async () => {
 
 downloadBtn.addEventListener('click', () => {
   if (!currentPoem) return;
-  const blob = new Blob([currentPoem], { type: 'text/plain' });
+  const base = currentTitle || currentTheme;
+  const slug = base.replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40).toLowerCase();
+  const content = currentTitle ? `${currentTitle}\n\n${currentPoem}` : currentPoem;
+  const blob = new Blob([content], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `volta-${currentTheme.replace(/\s+/g, '-').slice(0, 30)}.txt`;
+  a.download = `volta-${slug}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 });

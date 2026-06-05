@@ -15,34 +15,51 @@ app = FastAPI(title="Volta")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-GENERATION_MODELS = [
-    "openrouter/auto",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "deepseek/deepseek-v3-base:free",
-    "google/gemma-3-12b-it:free",
-    "qwen/qwen3-8b:free",
+GEMINI_MODELS = [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-1.5-flash",
 ]
 
-ANALYSIS_MODELS = [
-    "openrouter/auto",
-    "deepseek/deepseek-r1:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemma-3-12b-it:free",
-    "qwen/qwen3-8b:free",
-]
-
-RETRYABLE_CODES = ("429", "404", "503", "529")
+RETRYABLE_CODES = ("429", "503", "529")
 
 
 def get_client() -> OpenAI:
     return OpenAI(
-        base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
-        api_key=os.environ["OPENROUTER_API_KEY"],
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        api_key=os.environ["GOOGLE_AI_API_KEY"],
     )
 
 
 def sanitize(text: str, max_len: int = 500) -> str:
     return re.sub(r"[^\w\s.,!?'\"-]", "", text.strip()[:max_len])
+
+
+def call_with_fallback(messages: list, max_tokens: int, header: str):
+    """Try each Gemini model in order. Returns (content, error, model)."""
+    client = get_client()
+    last_error = None
+    for model in GEMINI_MODELS:
+        try:
+            completion = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+            )
+            if (
+                completion
+                and completion.choices
+                and completion.choices[0].message
+                and completion.choices[0].message.content
+            ):
+                return completion.choices[0].message.content.strip(), None, model
+            last_error = f"Model '{model}' returned empty response."
+        except Exception as e:
+            last_error = str(e)
+            if any(code in str(e) for code in RETRYABLE_CODES):
+                continue
+            break
+    return None, last_error or "All models failed.", None
 
 
 class GenerateRequest(BaseModel):
@@ -55,6 +72,10 @@ class GenerateRequest(BaseModel):
 
 
 class AnalyzeRequest(BaseModel):
+    poem: str
+
+
+class TitleRequest(BaseModel):
     poem: str
 
 
@@ -88,10 +109,9 @@ async def generate(req: GenerateRequest):
 
     async def event_stream():
         last_error = None
-        for model in GENERATION_MODELS:
+        for model in GEMINI_MODELS:
             try:
                 stream = client.chat.completions.create(
-                    extra_headers={"X-Title": "Volta"},
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
                     stream=True,
@@ -118,38 +138,35 @@ async def generate(req: GenerateRequest):
     )
 
 
+@app.post("/title")
+async def title(req: TitleRequest):
+    poem = sanitize(req.poem, 2000)
+    messages = [{
+        "role": "user",
+        "content": (
+            "Read this poem and give it a short, evocative title (2–5 words).\n"
+            "Output only the title — no punctuation, no quotes, no commentary.\n\n"
+            f"Poem:\n{poem}"
+        ),
+    }]
+    content, error, model = call_with_fallback(messages, max_tokens=20, header="VoltaTitle")
+    if error:
+        return {"error": error}
+    return {"title": content, "model": model}
+
+
 @app.post("/analyze")
 async def analyze(req: AnalyzeRequest):
     poem = sanitize(req.poem, 2000)
-    prompt = (
-        "Analyze the following poem concisely. For each point, give a 1–2 sentence answer:\n"
-        "- Mood\n- Theme\n- Poetic form\n- Rhyme scheme\n- Line count\n\n"
-        f"Poem:\n{poem}"
-    )
-    client = get_client()
-    last_error = None
-    for model in ANALYSIS_MODELS:
-        try:
-            completion = client.chat.completions.create(
-                extra_headers={"X-Title": "VoltaAnalysis"},
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=400,
-            )
-            if (
-                completion
-                and completion.choices
-                and completion.choices[0].message
-                and completion.choices[0].message.content
-            ):
-                return {
-                    "analysis": completion.choices[0].message.content.strip(),
-                    "model": model,
-                }
-            last_error = f"Model '{model}' returned empty response."
-        except Exception as e:
-            last_error = str(e)
-            if any(code in str(e) for code in RETRYABLE_CODES):
-                continue
-            break
-    return {"error": last_error or "All models failed."}
+    messages = [{
+        "role": "user",
+        "content": (
+            "Analyze the following poem concisely. For each point, give a 1–2 sentence answer:\n"
+            "- Mood\n- Theme\n- Poetic form\n- Rhyme scheme\n- Line count\n\n"
+            f"Poem:\n{poem}"
+        ),
+    }]
+    content, error, model = call_with_fallback(messages, max_tokens=400, header="VoltaAnalysis")
+    if error:
+        return {"error": error}
+    return {"analysis": content, "model": model}
