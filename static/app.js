@@ -206,11 +206,14 @@ form.addEventListener('submit', async (e) => {
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
+      // Flush any remaining buffer when stream closes
+      buffer += done
+        ? decoder.decode(new Uint8Array(), { stream: false })
+        : decoder.decode(value, { stream: true });
+
       const lines = buffer.split('\n');
-      buffer = lines.pop();
+      buffer = done ? '' : (lines.pop() ?? '');
 
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
@@ -241,9 +244,15 @@ form.addEventListener('submit', async (e) => {
           poemText.textContent = currentPoem;
         }
       }
+
+      if (done) break;
     }
-    // Stream ended without [DONE]
-    if (currentPoem) showPoem(currentPoem, usedModel);
+    // Stream closed without [DONE] — show whatever arrived
+    if (currentPoem) {
+      showPoem(currentPoem, usedModel);
+      addToHistory(currentPoem, currentTheme, payload.mood, payload.poetic_form);
+      fetchTitle(currentPoem);
+    }
 
   } catch (err) {
     showEmpty();

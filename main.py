@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from openai import OpenAI
+from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,16 +16,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 GEMINI_MODELS = [
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-    "gemini-1.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash-lite",
+    "gemini-2.0-flash-lite-001",
 ]
 
 RETRYABLE_CODES = ("429", "503", "529")
 
 
-def get_client() -> OpenAI:
-    return OpenAI(
+def get_client() -> AsyncOpenAI:
+    return AsyncOpenAI(
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         api_key=os.environ["GOOGLE_AI_API_KEY"],
     )
@@ -35,13 +35,13 @@ def sanitize(text: str, max_len: int = 500) -> str:
     return re.sub(r"[^\w\s.,!?'\"-]", "", text.strip()[:max_len])
 
 
-def call_with_fallback(messages: list, max_tokens: int, header: str):
+async def call_with_fallback(messages: list, max_tokens: int):
     """Try each Gemini model in order. Returns (content, error, model)."""
     client = get_client()
     last_error = None
     for model in GEMINI_MODELS:
         try:
-            completion = client.chat.completions.create(
+            completion = await client.chat.completions.create(
                 model=model,
                 messages=messages,
                 max_tokens=max_tokens,
@@ -111,14 +111,14 @@ async def generate(req: GenerateRequest):
         last_error = None
         for model in GEMINI_MODELS:
             try:
-                stream = client.chat.completions.create(
+                stream = await client.chat.completions.create(
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
                     stream=True,
-                    max_tokens=600,
+                    max_tokens=2048,
                 )
                 yield f"data: {json.dumps({'model': model})}\n\n"
-                for chunk in stream:
+                async for chunk in stream:
                     delta = chunk.choices[0].delta if chunk.choices else None
                     if delta and delta.content:
                         yield f"data: {json.dumps({'text': delta.content})}\n\n"
@@ -149,7 +149,7 @@ async def title(req: TitleRequest):
             f"Poem:\n{poem}"
         ),
     }]
-    content, error, model = call_with_fallback(messages, max_tokens=20, header="VoltaTitle")
+    content, error, model = await call_with_fallback(messages, max_tokens=20)
     if error:
         return {"error": error}
     return {"title": content, "model": model}
@@ -166,7 +166,7 @@ async def analyze(req: AnalyzeRequest):
             f"Poem:\n{poem}"
         ),
     }]
-    content, error, model = call_with_fallback(messages, max_tokens=400, header="VoltaAnalysis")
+    content, error, model = await call_with_fallback(messages, max_tokens=400)
     if error:
         return {"error": error}
     return {"analysis": content, "model": model}
