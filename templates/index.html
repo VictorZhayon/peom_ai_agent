@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volta — AI Poetry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-v">V</span>olta
+        <span class="logo-tag">AI Poetry</span>
+      </div>
+
+      <form id="poem-form" autocomplete="off">
+
+        <div class="field">
+          <label for="theme">Theme</label>
+          <input id="theme" name="theme" type="text" placeholder="e.g. midnight rain, forgotten letters…" required />
+        </div>
+
+        <div class="field">
+          <label for="poetic_form">Poetic Form</label>
+          <div class="select-wrap">
+            <select id="poetic_form" name="poetic_form">
+              <option>Acrostic</option><option>Ballad</option><option>Blank Verse</option>
+              <option>Burlesque</option><option>Canzone</option><option>Carpe Diem</option>
+              <option>Cinquain</option><option>Concrete Poem</option><option>Couplets</option>
+              <option>Diamante</option><option>Double Dactyl</option><option>Eclogue</option>
+              <option>Elegy</option><option>Endechas</option><option>Epigram</option>
+              <option>Epitaph</option><option selected>Free Verse</option><option>Ghazal</option>
+              <option>Haiku</option><option>Heroic Couplet</option><option>Horatian Ode</option>
+              <option>Idyll</option><option>Kimo</option><option>Limerick</option>
+              <option>Lyric</option><option>Madrigal</option><option>Masque</option>
+              <option>Monorhyme</option><option>Narrative Poem</option><option>Ode</option>
+              <option>Pantoum</option><option>Pastoral</option><option>Pindaric Ode</option>
+              <option>Quatrain</option><option>Rondeau</option><option>Sapphic</option>
+              <option>Senryu</option><option>Sestina</option><option>Sonnet</option>
+              <option>Tanka</option><option>Terzanelle</option><option>Triolet</option>
+              <option>Villanelle</option><option>Virelay</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="mood">Mood</label>
+          <div class="select-wrap">
+            <select id="mood" name="mood">
+              <option>Adventurous</option><option>Amused</option><option>Angry</option>
+              <option>Anxious</option><option>Appreciative</option><option>Ashamed</option>
+              <option>Bitter</option><option>Blissful</option><option>Bold</option>
+              <option>Calm</option><option>Celebratory</option><option>Contemplative</option>
+              <option>Critical</option><option>Curious</option><option>Cynical</option>
+              <option>Defiant</option><option>Depressed</option><option>Despairing</option>
+              <option>Desperate</option><option>Determined</option><option>Disillusioned</option>
+              <option>Dreamy</option><option>Eerie</option><option>Elated</option>
+              <option>Embarrassed</option><option>Empathetic</option><option>Enthusiastic</option>
+              <option>Envious</option><option>Exuberant</option><option>Fearful</option>
+              <option>Flippant</option><option>Frivolous</option><option>Gloomy</option>
+              <option>Grateful</option><option>Guilty</option><option>Happy</option>
+              <option>Haunting</option><option>Hopeful</option><option>Humble</option>
+              <option>Humorous</option><option>Hurt</option><option>Hypnotic</option>
+              <option>Imaginative</option><option>Inquisitive</option><option>Insistent</option>
+              <option>Inspiring</option><option>Ironic</option><option>Joyful</option>
+              <option>Jubilant</option><option>Lonely</option><option>Longing</option>
+              <option>Lyrical</option><option selected>Melancholic</option><option>Melodramatic</option>
+              <option>Mellow</option><option>Moody</option><option>Morose</option>
+              <option>Mournful</option><option>Mystical</option><option>Nostalgic</option>
+              <option>Optimistic</option><option>Outrageous</option><option>Overwhelming</option>
+              <option>Passionate</option><option>Peaceful</option><option>Pensive</option>
+              <option>Playful</option><option>Pleading</option><option>Poignant</option>
+              <option>Proud</option><option>Provocative</option><option>Puzzled</option>
+              <option>Quirky</option><option>Rebellious</option><option>Reflective</option>
+              <option>Regretful</option><option>Relaxed</option><option>Relentless</option>
+              <option>Reminiscent</option><option>Repentant</option><option>Resigned</option>
+              <option>Resolute</option><option>Reverent</option><option>Rhapsodic</option>
+              <option>Romantic</option><option>Sad</option><option>Sarcastic</option>
+              <option>Satirical</option><option>Scornful</option><option>Sensitive</option>
+              <option>Sentimental</option><option>Serious</option><option>Sighing</option>
+              <option>Silly</option><option>Sincere</option><option>Skeptical</option>
+              <option>Sorrowful</option><option>Soulful</option><option>Somber</option>
+              <option>Sophisticated</option><option>Spiritual</option><option>Stirring</option>
+              <option>Stormy</option><option>Strange</option><option>Stubborn</option>
+              <option>Subdued</option><option>Suspenseful</option><option>Sympathetic</option>
+              <option>Tense</option><option>Tentative</option><option>Thankful</option>
+              <option>Thoughtful</option><option>Timid</option><option>Tranquil</option>
+              <option>Triumphant</option><option>Troubled</option><option>Unconventional</option>
+              <option>Unhappy</option><option>Unsettling</option><option>Uplifting</option>
+              <option>Vivid</option><option>Wistful</option><option>Witty</option>
+              <option>Woeful</option><option>Yearning</option><option>Zealous</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="rhyme_scheme">Rhyme Scheme</label>
+          <div class="select-wrap">
+            <select id="rhyme_scheme" name="rhyme_scheme">
+              <option selected>Free Verse</option>
+              <option>Alliterative Rhyme</option><option>Alternate Rhyme</option>
+              <option>Assonance</option><option>Consonance</option><option>Couplet Rhyme</option>
+              <option>Enclosed Rhyme</option><option>End Rhyme</option><option>Eye Rhyme</option>
+              <option>Feminine Rhyme</option><option>Half Rhyme</option><option>Internal Rhyme</option>
+              <option>Monorhyme</option><option>Perfect Rhyme</option><option>Slant Rhyme</option>
+              <option>Triplet Rhyme</option><option>Wrenched Rhyme</option><option>Rhyme Royal</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="length">Length — <span id="length-display">12</span> lines</label>
+          <input id="length" name="length" type="range" min="4" max="50" value="12" />
+        </div>
+
+        <div class="field">
+          <label for="keywords">Keywords <span class="label-hint">(optional, comma-separated)</span></label>
+          <input id="keywords" name="keywords" type="text" placeholder="e.g. silver, tide, silence…" />
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="random-btn" class="btn-ghost" title="Random inspiration">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+            Inspire me
+          </button>
+          <button type="submit" id="generate-btn" class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            Generate
+          </button>
+        </div>
+
+      </form>
+
+      <!-- History -->
+      <div id="history-section" class="history-section" style="display:none">
+        <div class="history-header">
+          <span>Recent poems</span>
+          <button id="clear-history-btn" class="btn-link">Clear</button>
+        </div>
+        <div id="history-list"></div>
+      </div>
+    </aside>
+
+    <!-- ── Main ── -->
+    <main class="main">
+
+      <!-- Poem area -->
+      <section class="poem-section">
+        <div id="poem-card" class="poem-card state-empty">
+
+          <!-- Empty state -->
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon">✦</div>
+            <p>Set your theme and hit <em>Generate</em><br />to craft your poem.</p>
+          </div>
+
+          <!-- Loading state -->
+          <div class="loading-state" id="loading-state" style="display:none">
+            <div class="spinner"></div>
+            <span>Composing…</span>
+          </div>
+
+          <!-- Poem text -->
+          <div id="poem-text" class="poem-text" style="display:none"></div>
+
+        </div>
+
+        <!-- Action bar (shown after generation) -->
+        <div id="poem-actions" class="poem-actions" style="display:none">
+          <span id="model-badge" class="model-badge"></span>
+          <div class="action-btns">
+            <button id="copy-btn" class="btn-action" title="Copy poem">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+            <button id="download-btn" class="btn-action" title="Download as .txt">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analyze area -->
+      <section class="analyze-section">
+        <button id="analyze-toggle" class="analyze-toggle">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>
+          Analyze a poem
+          <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+        </button>
+
+        <div id="analyze-panel" class="analyze-panel" style="display:none">
+          <textarea
+            id="analyze-input"
+            placeholder="Paste a poem here…"
+            rows="8"
+          ></textarea>
+          <div class="analyze-or">
+            <span>or</span>
+            <label class="upload-label">
+              upload .txt file
+              <input id="file-upload" type="file" accept=".txt" style="display:none" />
+            </label>
+          </div>
+          <button id="analyze-btn" class="btn-primary" style="width:100%">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            Analyze
+          </button>
+
+          <div id="analyze-result" class="analyze-result" style="display:none">
+            <div id="analyze-model-badge" class="model-badge"></div>
+            <pre id="analyze-text"></pre>
+          </div>
+
+          <div id="analyze-error" class="error-msg" style="display:none"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
