@@ -671,17 +671,161 @@ textarea {
   margin-top: 10px;
 }
 
+/* ── Revision bar ── */
+.revision-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 12px 0 4px;
+  animation: fadeSlideIn 0.2s var(--ease);
+}
+.revision-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-right: 4px;
+}
+.btn-revise {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px;
+  padding: 5px 13px;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+}
+.btn-revise:hover {
+  color: var(--accent);
+  border-color: rgba(201,168,76,0.35);
+  background: var(--accent-dim);
+}
+.btn-revise:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Fullscreen poem ── */
+.poem-card.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  border-radius: 0;
+  max-height: 100vh;
+  padding: 10vh 15vw;
+  background: var(--bg);
+  border: none;
+  box-shadow: none;
+  overflow-y: auto;
+}
+.poem-card.fullscreen::before { display: none; }
+.poem-card.fullscreen .poem-title { font-size: 2.2rem; }
+.poem-card.fullscreen .poem-text { font-size: 1.55rem; line-height: 2.2; }
+
+.fullscreen-hint {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 201;
+  background: rgba(0,0,0,0.6);
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  pointer-events: none;
+  animation: fadeSlideIn 0.3s var(--ease);
+}
+
+/* ── Formatted analysis ── */
+.analyze-rows { display: flex; flex-direction: column; gap: 10px; }
+.analysis-row {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.analysis-key {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  width: 110px;
+  min-width: 110px;
+  padding-top: 2px;
+}
+.analysis-val { color: var(--text); }
+.analysis-plain {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+/* ── Mobile header ── */
+.mobile-header {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+.mobile-menu-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  padding: 7px 9px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, border-color 0.15s;
+}
+.mobile-menu-btn:hover { color: var(--accent); border-color: rgba(201,168,76,0.35); }
+
+.mobile-logo {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+.mobile-logo .logo-v { color: var(--accent); font-style: italic; }
+
+/* Mobile overlay */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 40;
+  backdrop-filter: blur(2px);
+}
+.mobile-overlay.visible { display: block; }
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .app { flex-direction: column; }
+  .mobile-header { display: flex; }
+
   .sidebar {
-    width: 100%;
-    min-width: unset;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    max-height: 55vh;
-    padding: 20px 18px;
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.28s var(--ease);
+    border-right: 1px solid var(--border);
+    width: 290px;
+    min-width: 290px;
+    max-height: 100vh;
+    overflow-y: auto;
   }
-  .main { padding: 28px 22px; }
-  .poem-card { padding: 32px 28px; }
+  .sidebar.open { transform: translateX(0); }
+
+  .main { padding: 20px 18px; }
+  .poem-card { padding: 28px 24px; }
+  .poem-card.fullscreen { padding: 8vh 6vw; }
+  .action-btns { flex-wrap: wrap; }
 }

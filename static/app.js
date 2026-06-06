@@ -2,40 +2,51 @@
 
 // ── State ──────────────────────────────────────────────────────────────────
 const history = [];
-let currentPoem = '';
+let currentPoem  = '';
 let currentTheme = '';
 let currentTitle = '';
+let isGenerating = false;
+let isFetchingTitle = false;
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const form         = document.getElementById('poem-form');
-const generateBtn  = document.getElementById('generate-btn');
-const randomBtn    = document.getElementById('random-btn');
-const lengthInput  = document.getElementById('length');
-const lengthDisplay= document.getElementById('length-display');
+const form          = document.getElementById('poem-form');
+const generateBtn   = document.getElementById('generate-btn');
+const randomBtn     = document.getElementById('random-btn');
+const lengthInput   = document.getElementById('length');
+const lengthDisplay = document.getElementById('length-display');
 
-const poemCard        = document.getElementById('poem-card');
-const emptyState      = document.getElementById('empty-state');
-const loadingState    = document.getElementById('loading-state');
-const poemTitleWrap   = document.getElementById('poem-title-wrap');
-const poemTitleLoading= document.getElementById('poem-title-loading');
-const poemTitleEl     = document.getElementById('poem-title');
-const poemText        = document.getElementById('poem-text');
-const poemActions     = document.getElementById('poem-actions');
-const copyBtn         = document.getElementById('copy-btn');
-const downloadBtn     = document.getElementById('download-btn');
+const poemCard         = document.getElementById('poem-card');
+const emptyState       = document.getElementById('empty-state');
+const loadingState     = document.getElementById('loading-state');
+const poemTitleWrap    = document.getElementById('poem-title-wrap');
+const poemTitleLoading = document.getElementById('poem-title-loading');
+const poemTitleEl      = document.getElementById('poem-title');
+const poemText         = document.getElementById('poem-text');
+const poemActions      = document.getElementById('poem-actions');
+const regenerateBtn    = document.getElementById('regenerate-btn');
+const copyBtn          = document.getElementById('copy-btn');
+const downloadBtn      = document.getElementById('download-btn');
+const fullscreenBtn    = document.getElementById('fullscreen-btn');
+const fullscreenHint   = document.getElementById('fullscreen-hint');
+const revisionBar      = document.getElementById('revision-bar');
+const revisionBtns     = document.querySelectorAll('.btn-revise');
 
-const analyzeToggle= document.getElementById('analyze-toggle');
-const analyzePanel = document.getElementById('analyze-panel');
-const analyzeInput = document.getElementById('analyze-input');
-const fileUpload   = document.getElementById('file-upload');
-const analyzeBtn   = document.getElementById('analyze-btn');
-const analyzeResult= document.getElementById('analyze-result');
-const analyzeText  = document.getElementById('analyze-text');
-const analyzeError = document.getElementById('analyze-error');
+const analyzeToggle = document.getElementById('analyze-toggle');
+const analyzePanel  = document.getElementById('analyze-panel');
+const analyzeInput  = document.getElementById('analyze-input');
+const fileUpload    = document.getElementById('file-upload');
+const analyzeBtn    = document.getElementById('analyze-btn');
+const analyzeResult = document.getElementById('analyze-result');
+const analyzeRows   = document.getElementById('analyze-rows');
+const analyzeError  = document.getElementById('analyze-error');
 
 const historySection  = document.getElementById('history-section');
 const historyList     = document.getElementById('history-list');
 const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+const sidebar       = document.getElementById('sidebar');
+const mobileOverlay = document.getElementById('mobile-overlay');
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 
 // ── Random inspiration data ────────────────────────────────────────────────
 const RANDOM_THEMES = [
@@ -62,7 +73,7 @@ const RANDOM_RHYMES = [
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-// ── Length slider ──────────────────────────────────────────────────────────
+// ── Slider fill ────────────────────────────────────────────────────────────
 function updateSliderFill() {
   const min = +lengthInput.min, max = +lengthInput.max, val = +lengthInput.value;
   const pct = ((val - min) / (max - min)) * 100;
@@ -72,7 +83,7 @@ lengthInput.addEventListener('input', () => {
   lengthDisplay.textContent = lengthInput.value;
   updateSliderFill();
 });
-updateSliderFill(); // initialise on page load
+updateSliderFill();
 
 // ── Random inspiration ─────────────────────────────────────────────────────
 randomBtn.addEventListener('click', () => {
@@ -82,234 +93,314 @@ randomBtn.addEventListener('click', () => {
   setSelectValue('rhyme_scheme', pick(RANDOM_RHYMES));
   lengthInput.value = Math.floor(Math.random() * 18) + 6;
   lengthDisplay.textContent = lengthInput.value;
+  updateSliderFill();
   document.getElementById('keywords').value = '';
+  document.getElementById('style').value = '';
 });
 
 function setSelectValue(id, value) {
   const sel = document.getElementById(id);
   for (const opt of sel.options) {
-    if (opt.value === value || opt.text === value) {
-      sel.value = opt.value;
-      return;
-    }
+    if (opt.value === value || opt.text === value) { sel.value = opt.value; return; }
   }
 }
 
-// ── Poem display helpers ───────────────────────────────────────────────────
+// ── Keyboard shortcut: Cmd/Ctrl + Enter ───────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    if (!isGenerating) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  }
+  if (e.key === 'Escape' && poemCard.classList.contains('fullscreen')) {
+    exitFullscreen();
+  }
+});
+
+// ── Display helpers ────────────────────────────────────────────────────────
 function showEmpty() {
   poemCard.className = 'poem-card state-empty';
-  emptyState.style.display = '';
+  emptyState.style.display   = '';
   loadingState.style.display = 'none';
   poemTitleWrap.style.display = 'none';
-  poemText.style.display = 'none';
-  poemActions.style.display = 'none';
+  poemText.style.display     = 'none';
+  poemActions.style.display  = 'none';
+  revisionBar.style.display  = 'none';
   currentTitle = '';
 }
 
 function showLoading() {
   poemCard.className = 'poem-card state-active';
-  emptyState.style.display = 'none';
+  emptyState.style.display   = 'none';
   loadingState.style.display = '';
   poemTitleWrap.style.display = 'none';
-  poemText.style.display = 'none';
-  poemActions.style.display = 'none';
+  poemText.style.display     = 'none';
+  poemActions.style.display  = 'none';
+  revisionBar.style.display  = 'none';
 }
 
-function renderStanzas(text) {
-  const stanzas = text.split(/\n{2,}/);
-  return stanzas.map(s => `<p>${escHtml(s).replace(/\n/g, '<br>')}</p>`).join('');
-}
-
-function showPoem(text, model) {
+function showPoem(text, _model) {
   poemCard.className = 'poem-card state-active';
-  emptyState.style.display = 'none';
+  emptyState.style.display   = 'none';
   loadingState.style.display = 'none';
-  poemText.style.display = '';
-  poemText.innerHTML = renderStanzas(text);
+  poemText.style.display     = '';
+  poemText.innerHTML         = renderStanzas(text);
   poemText.classList.remove('streaming');
-  poemActions.style.display = '';
+  poemActions.style.display  = '';
+  revisionBar.style.display  = '';
 }
 
 function startStreaming() {
   poemCard.className = 'poem-card state-active';
-  emptyState.style.display = 'none';
-  loadingState.style.display = 'none';
+  emptyState.style.display    = 'none';
+  loadingState.style.display  = 'none';
   poemTitleWrap.style.display = 'none';
-  poemText.style.display = '';
-  poemText.innerHTML = '';
+  poemText.style.display      = '';
+  poemText.innerHTML          = '';
   poemText.classList.add('streaming');
-  poemActions.style.display = 'none';
+  poemActions.style.display   = 'none';
+  revisionBar.style.display   = 'none';
+}
+
+function renderStanzas(text) {
+  return text.split(/\n{2,}/)
+    .map(s => `<p>${escHtml(s).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
+// ── Title helpers ──────────────────────────────────────────────────────────
+function cleanTitle(t) {
+  return t.replace(/^["'"""'']+|["'"""'']+$/g, '').replace(/[.!?,;]+$/, '').trim();
 }
 
 function showTitleLoading() {
   poemTitleEl.textContent = '';
   poemTitleEl.classList.remove('visible');
   poemTitleLoading.style.display = 'flex';
-  poemTitleWrap.style.display = '';
+  poemTitleWrap.style.display    = '';
 }
 
 function showTitle(title) {
   poemTitleLoading.style.display = 'none';
-  poemTitleEl.textContent = title;
-  // Trigger transition on next frame
+  poemTitleEl.textContent        = title;
   requestAnimationFrame(() => poemTitleEl.classList.add('visible'));
 }
 
 async function fetchTitle(poem) {
+  if (isFetchingTitle) return;
+  isFetchingTitle = true;
   showTitleLoading();
   try {
-    const res = await fetch('/title', {
+    const res  = await fetch('/title', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ poem }),
     });
     const data = await res.json();
     if (data.title) {
-      currentTitle = data.title;
-      showTitle(data.title);
+      currentTitle = cleanTitle(data.title);
+      showTitle(currentTitle);
     } else {
       poemTitleWrap.style.display = 'none';
     }
   } catch {
     poemTitleWrap.style.display = 'none';
+  } finally {
+    isFetchingTitle = false;
   }
 }
 
+// ── Shared SSE stream consumer ─────────────────────────────────────────────
+async function consumeStream(url, payload, onChunk, onDone, onError) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+  const reader  = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += done
+      ? decoder.decode(new Uint8Array(), { stream: false })
+      : decoder.decode(value, { stream: true });
+
+    const lines = buffer.split('\n');
+    buffer = done ? '' : (lines.pop() ?? '');
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const raw = line.slice(6).trim();
+      if (raw === '[DONE]') { onDone(); return; }
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch { continue; }
+      if (parsed.error) { onError(parsed.error); return; }
+      if (parsed.text)  onChunk(parsed.text);
+    }
+    if (done) break;
+  }
+  onDone();
+}
+
 // ── Poem generation ────────────────────────────────────────────────────────
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const theme = document.getElementById('theme').value.trim();
-  if (!theme) return;
-
-  const payload = {
-    theme,
-    mood:         document.getElementById('mood').value,
-    length:       parseInt(lengthInput.value, 10),
-    poetic_form:  document.getElementById('poetic_form').value,
-    keywords:     document.getElementById('keywords').value.trim(),
-    rhyme_scheme: document.getElementById('rhyme_scheme').value,
-  };
-
+async function runGeneration(payload) {
+  if (isGenerating) return;
+  isGenerating = true;
   generateBtn.disabled = true;
   currentPoem = '';
-  currentTheme = theme;
 
-  // Show spinner first, transition to streaming once model responds
   showLoading();
-
-  let usedModel = '';
   let firstChunk = true;
 
   try {
-    const response = await fetch('/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-
-      // Flush any remaining buffer when stream closes
-      buffer += done
-        ? decoder.decode(new Uint8Array(), { stream: false })
-        : decoder.decode(value, { stream: true });
-
-      const lines = buffer.split('\n');
-      buffer = done ? '' : (lines.pop() ?? '');
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const raw = line.slice(6).trim();
-        if (raw === '[DONE]') {
-          showPoem(currentPoem, usedModel);
-          addToHistory(currentPoem, currentTheme, payload.mood, payload.poetic_form);
-          fetchTitle(currentPoem);
-          return;
-        }
-        let parsed;
-        try { parsed = JSON.parse(raw); } catch { continue; }
-
-        if (parsed.error) {
-          showEmpty();
-          showError(parsed.error);
-          return;
-        }
-        if (parsed.model) {
-          usedModel = parsed.model;
-        }
-        if (parsed.text) {
-          if (firstChunk) {
-            startStreaming();
-            firstChunk = false;
-          }
-          currentPoem += parsed.text.replace(/\*/g, '');
-          poemText.innerHTML = renderStanzas(currentPoem);
-        }
-      }
-
-      if (done) break;
-    }
-    // Stream closed without [DONE] — show whatever arrived
-    if (currentPoem) {
-      showPoem(currentPoem, usedModel);
-      addToHistory(currentPoem, currentTheme, payload.mood, payload.poetic_form);
-      fetchTitle(currentPoem);
-    }
-
+    await consumeStream(
+      '/generate',
+      payload,
+      (text) => {
+        if (firstChunk) { startStreaming(); firstChunk = false; }
+        currentPoem += text.replace(/\*/g, '');
+        poemText.innerHTML = renderStanzas(currentPoem);
+      },
+      () => {
+        showPoem(currentPoem, '');
+        addToHistory(currentPoem, payload.theme, payload.mood, payload.poetic_form);
+        fetchTitle(currentPoem);
+      },
+      (err) => { showEmpty(); showError(err); },
+    );
   } catch (err) {
     showEmpty();
     showError(err.message);
   } finally {
+    isGenerating = false;
     generateBtn.disabled = false;
   }
-});
-
-function showError(msg) {
-  const div = document.createElement('div');
-  div.className = 'error-msg';
-  div.textContent = msg;
-  poemSection.prepend(div);
-  setTimeout(() => div.remove(), 6000);
 }
 
-// Grab poem section for error insertion
-const poemSection = document.querySelector('.poem-section');
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const theme = document.getElementById('theme').value.trim();
+  if (!theme) return;
+  currentTheme = theme;
+  runGeneration({
+    theme,
+    mood:             document.getElementById('mood').value,
+    length:           parseInt(lengthInput.value, 10),
+    poetic_form:      document.getElementById('poetic_form').value,
+    keywords:         document.getElementById('keywords').value.trim(),
+    rhyme_scheme:     document.getElementById('rhyme_scheme').value,
+    style_inspiration:document.getElementById('style').value.trim(),
+  });
+});
+
+// ── Regenerate ────────────────────────────────────────────────────────────
+regenerateBtn.addEventListener('click', () => {
+  form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+});
+
+// ── Revision ──────────────────────────────────────────────────────────────
+revisionBtns.forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    if (isGenerating || !currentPoem) return;
+    const instruction = btn.dataset.instruction;
+    isGenerating = true;
+    revisionBtns.forEach(b => b.disabled = true);
+    generateBtn.disabled = true;
+
+    const prevPoem = currentPoem;
+    currentPoem = '';
+    let firstChunk = true;
+
+    poemTitleWrap.style.display = 'none';
+    poemTitleEl.classList.remove('visible');
+
+    try {
+      await consumeStream(
+        '/revise',
+        { poem: prevPoem, instruction },
+        (text) => {
+          if (firstChunk) { startStreaming(); firstChunk = false; }
+          currentPoem += text.replace(/\*/g, '');
+          poemText.innerHTML = renderStanzas(currentPoem);
+        },
+        () => {
+          showPoem(currentPoem, '');
+          fetchTitle(currentPoem);
+        },
+        (err) => { currentPoem = prevPoem; showPoem(prevPoem, ''); showError(err); },
+      );
+    } catch (err) {
+      currentPoem = prevPoem;
+      showPoem(prevPoem, '');
+      showError(err.message);
+    } finally {
+      isGenerating = false;
+      revisionBtns.forEach(b => b.disabled = false);
+      generateBtn.disabled = false;
+    }
+  });
+});
 
 // ── Copy & Download ────────────────────────────────────────────────────────
 copyBtn.addEventListener('click', async () => {
   if (!currentPoem) return;
   await navigator.clipboard.writeText(currentPoem);
-  copyBtn.textContent = '';
   copyBtn.classList.add('copied');
-  copyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg> Copied`;
+  copyBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg> Copied`;
   setTimeout(() => {
     copyBtn.classList.remove('copied');
-    copyBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy`;
+    copyBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy`;
   }, 2000);
 });
 
 downloadBtn.addEventListener('click', () => {
   if (!currentPoem) return;
-  const base = currentTitle || currentTheme;
-  const slug = base.replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40).toLowerCase();
+  const base    = currentTitle || currentTheme;
+  const slug    = base.replace(/\s+/g, '-').replace(/[^\w-]/g, '').slice(0, 40).toLowerCase();
   const content = currentTitle ? `${currentTitle}\n\n${currentPoem}` : currentPoem;
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `volta-${slug}.txt`;
+  const blob    = new Blob([content], { type: 'text/plain' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href = url; a.download = `volta-${slug}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 });
 
-// ── History ────────────────────────────────────────────────────────────────
+// ── Fullscreen ────────────────────────────────────────────────────────────
+fullscreenBtn.addEventListener('click', () => {
+  poemCard.classList.add('fullscreen');
+  fullscreenHint.style.display = '';
+  setTimeout(() => { fullscreenHint.style.display = 'none'; }, 2500);
+});
+
+function exitFullscreen() {
+  poemCard.classList.remove('fullscreen');
+  fullscreenHint.style.display = 'none';
+}
+
+poemCard.addEventListener('dblclick', (e) => {
+  if (poemCard.classList.contains('fullscreen')) exitFullscreen();
+});
+
+// ── Mobile drawer ─────────────────────────────────────────────────────────
+function openSidebar() {
+  sidebar.classList.add('open');
+  mobileOverlay.classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  mobileOverlay.classList.remove('visible');
+  document.body.style.overflow = '';
+}
+mobileMenuBtn.addEventListener('click', openSidebar);
+mobileOverlay.addEventListener('click', closeSidebar);
+form.addEventListener('submit', closeSidebar);
+
+// ── History ───────────────────────────────────────────────────────────────
 function addToHistory(poem, theme, mood, form) {
   const excerpt = poem.split('\n').find(l => l.trim()) || '';
   history.unshift({ poem, theme, mood, form, excerpt, ts: Date.now() });
@@ -318,10 +409,7 @@ function addToHistory(poem, theme, mood, form) {
 }
 
 function renderHistory() {
-  if (history.length === 0) {
-    historySection.style.display = 'none';
-    return;
-  }
+  if (history.length === 0) { historySection.style.display = 'none'; return; }
   historySection.style.display = '';
   historyList.innerHTML = '';
   history.forEach((item) => {
@@ -333,7 +421,7 @@ function renderHistory() {
       <div class="history-card-meta">${escHtml(item.mood)} · ${escHtml(item.form)}</div>
     `;
     card.addEventListener('click', () => {
-      currentPoem = item.poem;
+      currentPoem  = item.poem;
       currentTheme = item.theme;
       showPoem(item.poem, '');
     });
@@ -346,18 +434,14 @@ clearHistoryBtn.addEventListener('click', () => {
   renderHistory();
 });
 
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ── Analyze toggle ─────────────────────────────────────────────────────────
+// ── Analyze toggle ────────────────────────────────────────────────────────
 analyzeToggle.addEventListener('click', () => {
   const open = analyzePanel.style.display === 'none';
   analyzePanel.style.display = open ? '' : 'none';
   analyzeToggle.classList.toggle('open', open);
 });
 
-// ── File upload → textarea ─────────────────────────────────────────────────
+// ── File upload → textarea ────────────────────────────────────────────────
 fileUpload.addEventListener('change', () => {
   const file = fileUpload.files[0];
   if (!file) return;
@@ -367,35 +451,68 @@ fileUpload.addEventListener('change', () => {
   fileUpload.value = '';
 });
 
-// ── Analyze ────────────────────────────────────────────────────────────────
+// ── Analyze ───────────────────────────────────────────────────────────────
 analyzeBtn.addEventListener('click', async () => {
   const poem = analyzeInput.value.trim();
   if (!poem) return;
 
   analyzeBtn.disabled = true;
   analyzeResult.style.display = 'none';
-  analyzeError.style.display = 'none';
+  analyzeError.style.display  = 'none';
   analyzeBtn.textContent = 'Analyzing…';
 
   try {
-    const res = await fetch('/analyze', {
+    const res  = await fetch('/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ poem }),
     });
     const data = await res.json();
     if (data.error) {
-      analyzeError.textContent = data.error;
+      analyzeError.textContent   = data.error;
       analyzeError.style.display = '';
     } else {
-      analyzeText.textContent = data.analysis.replace(/\*+/g, '');
+      analyzeRows.innerHTML      = renderAnalysis(data.analysis);
       analyzeResult.style.display = '';
     }
   } catch (err) {
-    analyzeError.textContent = err.message;
+    analyzeError.textContent   = err.message;
     analyzeError.style.display = '';
   } finally {
     analyzeBtn.disabled = false;
-    analyzeBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> Analyze`;
+    analyzeBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> Analyze`;
   }
 });
+
+function renderAnalysis(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  return lines.map(line => {
+    const clean = line.replace(/^[-•]\s*/, '').replace(/\*+/g, '').trim();
+    const colon = clean.indexOf(':');
+    if (colon > 0 && colon < 30) {
+      const key = clean.slice(0, colon).trim();
+      const val = clean.slice(colon + 1).trim();
+      if (!val) return '';
+      return `<div class="analysis-row"><span class="analysis-key">${escHtml(key)}</span><span class="analysis-val">${escHtml(val)}</span></div>`;
+    }
+    return clean ? `<div class="analysis-plain">${escHtml(clean)}</div>` : '';
+  }).join('');
+}
+
+// ── Error display ─────────────────────────────────────────────────────────
+function showError(msg) {
+  const div = document.createElement('div');
+  div.className = 'error-msg';
+  div.textContent = msg;
+  poemSection.prepend(div);
+  setTimeout(() => div.remove(), 6000);
+}
+const poemSection = document.querySelector('.poem-section');
+
+// ── Utils ─────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Volta</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='30' font-family='Georgia,serif' fill='%23c9a84c' font-style='italic'>V</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -12,8 +13,11 @@
 <body>
   <div class="app">
 
+    <!-- Mobile overlay -->
+    <div id="mobile-overlay" class="mobile-overlay"></div>
+
     <!-- ── Sidebar ── -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="logo"><span class="logo-v">V</span>olta</div>
       <span class="logo-tag">Poetry</span>
       <div class="sidebar-divider"></div>
@@ -124,13 +128,18 @@
           <input id="keywords" name="keywords" type="text" placeholder="e.g. silver, tide, silence…" />
         </div>
 
+        <div class="field">
+          <label for="style">Style <span class="label-hint">(optional)</span></label>
+          <input id="style" name="style" type="text" placeholder="e.g. Pablo Neruda, Emily Dickinson…" />
+        </div>
+
         <div class="form-actions">
           <button type="button" id="random-btn" class="btn-ghost" title="Random inspiration">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-            Inspire me
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+            Inspire
           </button>
           <button type="submit" id="generate-btn" class="btn-primary">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             Generate
           </button>
         </div>
@@ -140,7 +149,7 @@
       <!-- History -->
       <div id="history-section" class="history-section" style="display:none">
         <div class="history-header">
-          <span>Recent poems</span>
+          <span>Recent</span>
           <button id="clear-history-btn" class="btn-link">Clear</button>
         </div>
         <div id="history-list"></div>
@@ -149,6 +158,14 @@
 
     <!-- ── Main ── -->
     <main class="main">
+
+      <!-- Mobile header -->
+      <div class="mobile-header">
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Open menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="mobile-logo"><span class="logo-v">V</span>olta</span>
+      </div>
 
       <!-- Poem area -->
       <section class="poem-section">
@@ -179,58 +196,72 @@
 
         </div>
 
-        <!-- Action bar (shown after generation) -->
+        <!-- Action bar -->
         <div id="poem-actions" class="poem-actions" style="display:none">
           <div class="action-btns">
-            <button id="copy-btn" class="btn-action" title="Copy poem">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            <button id="regenerate-btn" class="btn-action" title="Regenerate with same settings">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+              Regenerate
+            </button>
+            <button id="copy-btn" class="btn-action">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
               Copy
             </button>
-            <button id="download-btn" class="btn-action" title="Download as .txt">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <button id="download-btn" class="btn-action">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Download
+            </button>
+            <button id="fullscreen-btn" class="btn-action" title="Fullscreen">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,3 21,3 21,9"/><polyline points="9,21 3,21 3,15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             </button>
           </div>
         </div>
+
+        <!-- Revision bar -->
+        <div id="revision-bar" class="revision-bar" style="display:none">
+          <span class="revision-label">Refine</span>
+          <button class="btn-revise" data-instruction="Make it shorter and more concentrated">Shorten</button>
+          <button class="btn-revise" data-instruction="Make it darker and more melancholic">Darker</button>
+          <button class="btn-revise" data-instruction="Add more vivid imagery and metaphor">More imagery</button>
+          <button class="btn-revise" data-instruction="Add stronger rhyme throughout">Add rhyme</button>
+          <button class="btn-revise" data-instruction="Expand it with more depth and detail">Expand</button>
+        </div>
+
       </section>
 
       <!-- Analyze area -->
       <section class="analyze-section">
         <button id="analyze-toggle" class="analyze-toggle">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           Analyze a poem
           <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
         </button>
 
         <div id="analyze-panel" class="analyze-panel" style="display:none">
-          <textarea
-            id="analyze-input"
-            placeholder="Paste a poem here…"
-            rows="8"
-          ></textarea>
+          <textarea id="analyze-input" placeholder="Paste a poem here…" rows="8"></textarea>
           <div class="analyze-or">
             <span>or</span>
             <label class="upload-label">
-              upload .txt file
+              upload .txt
               <input id="file-upload" type="file" accept=".txt" style="display:none" />
             </label>
           </div>
           <button id="analyze-btn" class="btn-primary" style="width:100%">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             Analyze
           </button>
-
           <div id="analyze-result" class="analyze-result" style="display:none">
-            <pre id="analyze-text"></pre>
+            <div id="analyze-rows" class="analyze-rows"></div>
           </div>
-
           <div id="analyze-error" class="error-msg" style="display:none"></div>
         </div>
-        
       </section>
 
     </main>
   </div>
+
+  <!-- Fullscreen close hint -->
+  <div id="fullscreen-hint" class="fullscreen-hint" style="display:none">Press Esc to exit</div>
 
   <script src="/static/app.js"></script>
 </body>
