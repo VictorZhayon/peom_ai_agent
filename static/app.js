@@ -21,7 +21,6 @@ const poemTitleLoading= document.getElementById('poem-title-loading');
 const poemTitleEl     = document.getElementById('poem-title');
 const poemText        = document.getElementById('poem-text');
 const poemActions     = document.getElementById('poem-actions');
-const modelBadge      = document.getElementById('model-badge');
 const copyBtn         = document.getElementById('copy-btn');
 const downloadBtn     = document.getElementById('download-btn');
 
@@ -31,7 +30,6 @@ const analyzeInput = document.getElementById('analyze-input');
 const fileUpload   = document.getElementById('file-upload');
 const analyzeBtn   = document.getElementById('analyze-btn');
 const analyzeResult= document.getElementById('analyze-result');
-const analyzeModel = document.getElementById('analyze-model-badge');
 const analyzeText  = document.getElementById('analyze-text');
 const analyzeError = document.getElementById('analyze-error');
 
@@ -65,9 +63,16 @@ const RANDOM_RHYMES = [
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ── Length slider ──────────────────────────────────────────────────────────
+function updateSliderFill() {
+  const min = +lengthInput.min, max = +lengthInput.max, val = +lengthInput.value;
+  const pct = ((val - min) / (max - min)) * 100;
+  lengthInput.style.setProperty('--track-fill', `${pct}%`);
+}
 lengthInput.addEventListener('input', () => {
   lengthDisplay.textContent = lengthInput.value;
+  updateSliderFill();
 });
+updateSliderFill(); // initialise on page load
 
 // ── Random inspiration ─────────────────────────────────────────────────────
 randomBtn.addEventListener('click', () => {
@@ -110,15 +115,19 @@ function showLoading() {
   poemActions.style.display = 'none';
 }
 
+function renderStanzas(text) {
+  const stanzas = text.split(/\n{2,}/);
+  return stanzas.map(s => `<p>${escHtml(s).replace(/\n/g, '<br>')}</p>`).join('');
+}
+
 function showPoem(text, model) {
   poemCard.className = 'poem-card state-active';
   emptyState.style.display = 'none';
   loadingState.style.display = 'none';
   poemText.style.display = '';
-  poemText.textContent = text;
+  poemText.innerHTML = renderStanzas(text);
   poemText.classList.remove('streaming');
   poemActions.style.display = '';
-  modelBadge.textContent = model || '';
 }
 
 function startStreaming() {
@@ -127,7 +136,7 @@ function startStreaming() {
   loadingState.style.display = 'none';
   poemTitleWrap.style.display = 'none';
   poemText.style.display = '';
-  poemText.textContent = '';
+  poemText.innerHTML = '';
   poemText.classList.add('streaming');
   poemActions.style.display = 'none';
 }
@@ -240,8 +249,8 @@ form.addEventListener('submit', async (e) => {
             startStreaming();
             firstChunk = false;
           }
-          currentPoem += parsed.text;
-          poemText.textContent = currentPoem;
+          currentPoem += parsed.text.replace(/\*/g, '');
+          poemText.innerHTML = renderStanzas(currentPoem);
         }
       }
 
@@ -302,7 +311,8 @@ downloadBtn.addEventListener('click', () => {
 
 // ── History ────────────────────────────────────────────────────────────────
 function addToHistory(poem, theme, mood, form) {
-  history.unshift({ poem, theme, mood, form, ts: Date.now() });
+  const excerpt = poem.split('\n').find(l => l.trim()) || '';
+  history.unshift({ poem, theme, mood, form, excerpt, ts: Date.now() });
   if (history.length > 8) history.pop();
   renderHistory();
 }
@@ -314,11 +324,12 @@ function renderHistory() {
   }
   historySection.style.display = '';
   historyList.innerHTML = '';
-  history.forEach((item, i) => {
+  history.forEach((item) => {
     const card = document.createElement('div');
     card.className = 'history-card';
     card.innerHTML = `
       <div class="history-card-theme">${escHtml(item.theme)}</div>
+      <div class="history-card-excerpt">${escHtml(item.excerpt.slice(0, 52))}${item.excerpt.length > 52 ? '…' : ''}</div>
       <div class="history-card-meta">${escHtml(item.mood)} · ${escHtml(item.form)}</div>
     `;
     card.addEventListener('click', () => {
@@ -377,8 +388,7 @@ analyzeBtn.addEventListener('click', async () => {
       analyzeError.textContent = data.error;
       analyzeError.style.display = '';
     } else {
-      analyzeModel.textContent = data.model || '';
-      analyzeText.textContent = data.analysis;
+      analyzeText.textContent = data.analysis.replace(/\*+/g, '');
       analyzeResult.style.display = '';
     }
   } catch (err) {

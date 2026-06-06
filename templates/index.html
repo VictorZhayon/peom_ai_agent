@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Volta — AI Poetry</title>
+  <title>Volta</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -14,10 +14,10 @@
 
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
-      <div class="logo">
-        <span class="logo-v">V</span>olta
-        <span class="logo-tag">AI Poetry</span>
-      </div>
+      <div class="logo"><span class="logo-v">V</span>olta</div>
+      <span class="logo-tag">Poetry</span>
+      <div class="sidebar-divider"></div>
+      <div class="section-label">Compose</div>
 
       <form id="poem-form" autocomplete="off">
 
@@ -157,7 +157,7 @@
           <!-- Empty state -->
           <div class="empty-state" id="empty-state">
             <div class="empty-icon">✦</div>
-            <p>Set your theme and hit <em>Generate</em><br />to craft your poem.</p>
+            <p>Set a theme and<br><em>let the words find you.</em></p>
           </div>
 
           <!-- Loading state -->
@@ -181,7 +181,6 @@
 
         <!-- Action bar (shown after generation) -->
         <div id="poem-actions" class="poem-actions" style="display:none">
-          <span id="model-badge" class="model-badge"></span>
           <div class="action-btns">
             <button id="copy-btn" class="btn-action" title="Copy poem">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -222,12 +221,12 @@
           </button>
 
           <div id="analyze-result" class="analyze-result" style="display:none">
-            <div id="analyze-model-badge" class="model-badge"></div>
             <pre id="analyze-text"></pre>
           </div>
 
           <div id="analyze-error" class="error-msg" style="display:none"></div>
         </div>
+        
       </section>
 
     </main>
