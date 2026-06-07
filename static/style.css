@@ -827,5 +827,170 @@ textarea {
   .main { padding: 20px 18px; }
   .poem-card { padding: 28px 24px; }
   .poem-card.fullscreen { padding: 8vh 6vw; }
-  .action-btns { flex-wrap: wrap; }
+  .action-row { flex-wrap: wrap; }
+}
+
+/* ── Two-row action layout ── */
+.poem-actions {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.action-row-sm .btn-action {
+  font-size: 11px;
+  padding: 5px 10px;
+  opacity: 0.75;
+}
+.action-row-sm .btn-action:hover { opacity: 1; }
+
+/* ── Star / Save button ── */
+.btn-action.starred {
+  color: var(--accent);
+  border-color: rgba(201,168,76,0.45);
+  background: var(--accent-dim);
+}
+
+/* ── Read / Stop button ── */
+.btn-action.speaking {
+  color: #6dba88;
+  border-color: rgba(109,186,136,0.4);
+  background: rgba(109,186,136,0.06);
+  animation: pulseRead 2s ease-in-out infinite;
+}
+@keyframes pulseRead {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(109,186,136,0); }
+  50%       { box-shadow: 0 0 0 4px rgba(109,186,136,0.12); }
+}
+
+/* ── Revision bar restructured ── */
+.revision-bar {
+  flex-direction: column;
+  gap: 10px;
+}
+.revision-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.revision-custom {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.revision-custom input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  padding: 5px 14px;
+  outline: none;
+  transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+.revision-custom input::placeholder { color: var(--text-dim); }
+.revision-custom input:focus {
+  border-color: rgba(201,168,76,0.45);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.revision-send-btn {
+  padding: 5px 14px;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+/* ── Favorites section ── */
+.favorites-card-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Poet preset chips ── */
+.poet-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+.preset-chip {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+}
+.preset-chip:hover {
+  color: var(--accent);
+  border-color: rgba(201,168,76,0.35);
+  background: var(--accent-dim);
+}
+.preset-chip.active {
+  color: var(--accent);
+  border-color: rgba(201,168,76,0.5);
+  background: var(--accent-dim);
+}
+
+/* ── Poem stats ── */
+.poem-stats {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  padding: 2px 2px;
+  animation: fadeSlideIn 0.25s var(--ease);
+}
+
+/* ── Undo button ── */
+.btn-undo {
+  color: rgba(201,168,76,0.7);
+  border-color: rgba(201,168,76,0.2);
+}
+.btn-undo:hover {
+  color: var(--accent);
+  border-color: rgba(201,168,76,0.45);
+  background: var(--accent-dim);
+}
+
+/* ── Print view ── */
+@media print {
+  .sidebar,
+  .mobile-header,
+  .mobile-overlay,
+  .poem-actions,
+  .revision-bar,
+  .analyze-section,
+  .fullscreen-hint { display: none !important; }
+
+  body, html { background: #fff !important; color: #111 !important; }
+  .app { display: block !important; }
+  .main { padding: 0 !important; background: none !important; }
+
+  .poem-card {
+    background: #fff !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+  }
+  .poem-card::before { display: none !important; }
+
+  .poem-title { color: #111 !important; font-size: 2rem !important; }
+  .poem-text  { color: #111 !important; font-size: 1.2rem !important; line-height: 1.9 !important; }
+  .poem-text p { margin-bottom: 1.4em !important; }
 }

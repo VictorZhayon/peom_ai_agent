@@ -107,11 +107,16 @@ class GenerateRequest(BaseModel):
     keywords: str = ""
     rhyme_scheme: str = "Free Verse"
     style_inspiration: str = ""
+    language: str = "English"
 
 
 class ReviseRequest(BaseModel):
     poem: str
     instruction: str
+
+
+class ContinueRequest(BaseModel):
+    poem: str
 
 
 class AnalyzeRequest(BaseModel):
@@ -129,17 +134,30 @@ def build_poem_prompt(req: GenerateRequest) -> str:
     mood = sanitize(req.mood, 50)
     rhyme = sanitize(req.rhyme_scheme, 50)
     style = sanitize(req.style_inspiration, 100)
+    language = sanitize(req.language, 30) or "English"
     rhyme_line = f"Use a {rhyme} rhyme scheme." if rhyme != "Free Verse" else "Use free verse."
-    kw_line = f"Keywords to weave in naturally: {keywords}." if keywords else ""
+    kw_line    = f"Keywords to weave in naturally: {keywords}." if keywords else ""
     style_line = f"Write in the style of {style}." if style else ""
+    lang_line  = f"Compose the poem entirely in {language}." if language != "English" else ""
     return (
         f"Write a {mood} poem about '{theme}' in the {form} form.\n"
         f"{kw_line}\n"
         f"{style_line}\n"
+        f"{lang_line}\n"
         f"{rhyme_line}\n"
         f"Poem length: {req.length} lines.\n"
         f"Avoid clichés. Be vivid, original, and surprising.\n"
         f"Output only the poem — no title, no preamble, no commentary."
+    )
+
+
+def build_continue_prompt(req: ContinueRequest) -> str:
+    poem = sanitize(req.poem, 2000)
+    return (
+        f"Here is a poem:\n\n{poem}\n\n"
+        f"Continue this poem with 2 to 3 additional stanzas.\n"
+        f"Perfectly match the voice, rhythm, imagery, and tone already established.\n"
+        f"Output only the new stanzas — do not repeat any existing lines, no title, no preamble."
     )
 
 
@@ -172,6 +190,15 @@ async def generate(req: GenerateRequest):
 async def revise(req: ReviseRequest):
     return StreamingResponse(
         stream_to_sse(build_revise_prompt(req)),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.post("/continue")
+async def continue_poem(req: ContinueRequest):
+    return StreamingResponse(
+        stream_to_sse(build_continue_prompt(req)),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
