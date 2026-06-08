@@ -21,6 +21,19 @@
       <div class="logo"><span class="logo-v">V</span>olta</div>
       <span class="logo-tag">Poetry</span>
       <div class="sidebar-divider"></div>
+
+      <!-- Occasion presets -->
+      <div class="section-label">Occasions</div>
+      <div class="occasion-grid">
+        <button type="button" class="occasion-btn" data-occasion="birthday">Birthday</button>
+        <button type="button" class="occasion-btn" data-occasion="love">Love Letter</button>
+        <button type="button" class="occasion-btn" data-occasion="eulogy">Eulogy</button>
+        <button type="button" class="occasion-btn" data-occasion="wedding">Wedding</button>
+        <button type="button" class="occasion-btn" data-occasion="apology">Apology</button>
+        <button type="button" class="occasion-btn" data-occasion="lullaby">Lullaby</button>
+      </div>
+      <div class="sidebar-divider"></div>
+
       <div class="section-label">Compose</div>
 
       <form id="poem-form" autocomplete="off">
@@ -148,20 +161,11 @@
           <div class="select-wrap">
             <select id="language" name="language">
               <option selected>English</option>
-              <option>Spanish</option>
-              <option>French</option>
-              <option>Italian</option>
-              <option>German</option>
-              <option>Portuguese</option>
-              <option>Japanese</option>
-              <option>Chinese</option>
-              <option>Arabic</option>
-              <option>Russian</option>
-              <option>Hindi</option>
-              <option>Korean</option>
-              <option>Dutch</option>
-              <option>Polish</option>
-              <option>Turkish</option>
+              <option>Spanish</option><option>French</option><option>Italian</option>
+              <option>German</option><option>Portuguese</option><option>Japanese</option>
+              <option>Chinese</option><option>Arabic</option><option>Russian</option>
+              <option>Hindi</option><option>Korean</option><option>Dutch</option>
+              <option>Polish</option><option>Turkish</option>
             </select>
           </div>
         </div>
@@ -238,8 +242,14 @@
 
         </div>
 
-        <!-- Poem stats -->
-        <div id="poem-stats" class="poem-stats" style="display:none"></div>
+        <!-- Stats + font size -->
+        <div id="poem-meta" class="poem-meta" style="display:none">
+          <div id="poem-stats" class="poem-stats"></div>
+          <div class="font-controls">
+            <button id="font-size-down" class="btn-font" title="Decrease font size">A−</button>
+            <button id="font-size-up" class="btn-font" title="Increase font size">A+</button>
+          </div>
+        </div>
 
         <!-- Action bar -->
         <div id="poem-actions" class="poem-actions" style="display:none">
@@ -339,6 +349,33 @@
 
   <!-- Fullscreen close hint -->
   <div id="fullscreen-hint" class="fullscreen-hint" style="display:none">Press Esc to exit</div>
+
+  <!-- Keyboard shortcuts modal -->
+  <div id="shortcuts-modal" class="shortcuts-modal" style="display:none">
+    <div class="shortcuts-panel">
+      <div class="shortcuts-header">
+        <span>Keyboard Shortcuts</span>
+        <button id="shortcuts-close" class="shortcuts-close">✕</button>
+      </div>
+      <div class="shortcuts-list">
+        <div class="shortcut-row">
+          <span>Generate poem</span>
+          <div class="kbd-group"><kbd>⌘</kbd><kbd>Enter</kbd></div>
+        </div>
+        <div class="shortcut-row">
+          <span>Exit fullscreen</span>
+          <kbd>Esc</kbd>
+        </div>
+        <div class="shortcut-row">
+          <span>Toggle shortcuts</span>
+          <kbd>?</kbd>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shortcuts FAB -->
+  <button id="shortcuts-btn" class="shortcuts-fab" title="Keyboard shortcuts">?</button>
 
   <script src="/static/app.js"></script>
 </body>

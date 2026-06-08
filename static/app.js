@@ -12,6 +12,53 @@ let isSpeaking      = false;
 let undoPoem        = '';
 let undoTitle       = '';
 
+// ── Font size ──────────────────────────────────────────────────────────────
+const FONT_SIZES = [1.0, 1.15, 1.35, 1.5, 1.65, 1.85];
+let fontSizeIdx  = Math.min(
+  Math.max(parseInt(localStorage.getItem('volta-font-size') ?? '2', 10), 0),
+  FONT_SIZES.length - 1,
+);
+
+// ── Occasion presets ───────────────────────────────────────────────────────
+const OCCASIONS = {
+  birthday: {
+    theme: 'celebrating a birthday and the gift of another year',
+    mood: 'Celebratory', length: 12, poetic_form: 'Lyric',
+    keywords: 'joy, years, friendship, light, laughter',
+    rhyme_scheme: 'Alternate Rhyme',
+  },
+  love: {
+    theme: 'a letter to the person I love most',
+    mood: 'Romantic', length: 16, poetic_form: 'Sonnet',
+    keywords: 'heart, longing, tenderness, forever',
+    rhyme_scheme: 'Alternate Rhyme',
+  },
+  eulogy: {
+    theme: 'remembering someone who has passed too soon',
+    mood: 'Mournful', length: 20, poetic_form: 'Elegy',
+    keywords: 'memory, light, grace, forever, absence',
+    rhyme_scheme: 'Free Verse',
+  },
+  wedding: {
+    theme: 'two people beginning their life together',
+    mood: 'Hopeful', length: 14, poetic_form: 'Lyric',
+    keywords: 'vows, together, home, forever, intertwined',
+    rhyme_scheme: 'Couplet Rhyme',
+  },
+  apology: {
+    theme: 'seeking forgiveness from someone I have hurt',
+    mood: 'Sorrowful', length: 12, poetic_form: 'Free Verse',
+    keywords: 'sorry, broken, mend, time, words fail',
+    rhyme_scheme: 'Free Verse',
+  },
+  lullaby: {
+    theme: 'a gentle lullaby for a child drifting to sleep',
+    mood: 'Peaceful', length: 10, poetic_form: 'Ballad',
+    keywords: 'moonlight, sleep, dreams, soft, safe',
+    rhyme_scheme: 'Alternate Rhyme',
+  },
+};
+
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const form          = document.getElementById('poem-form');
 const generateBtn   = document.getElementById('generate-btn');
@@ -26,7 +73,10 @@ const poemTitleWrap    = document.getElementById('poem-title-wrap');
 const poemTitleLoading = document.getElementById('poem-title-loading');
 const poemTitleEl      = document.getElementById('poem-title');
 const poemText         = document.getElementById('poem-text');
+const poemMeta         = document.getElementById('poem-meta');
 const poemStats        = document.getElementById('poem-stats');
+const fontSizeDown     = document.getElementById('font-size-down');
+const fontSizeUp       = document.getElementById('font-size-up');
 const poemActions      = document.getElementById('poem-actions');
 const regenerateBtn    = document.getElementById('regenerate-btn');
 const continueBtn      = document.getElementById('continue-btn');
@@ -64,8 +114,13 @@ const sidebar       = document.getElementById('sidebar');
 const mobileOverlay = document.getElementById('mobile-overlay');
 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 
-const presetChips = document.querySelectorAll('.preset-chip');
-const styleInput  = document.getElementById('style');
+const presetChips  = document.querySelectorAll('.preset-chip');
+const styleInput   = document.getElementById('style');
+const occasionBtns = document.querySelectorAll('.occasion-btn');
+
+const shortcutsBtn   = document.getElementById('shortcuts-btn');
+const shortcutsModal = document.getElementById('shortcuts-modal');
+const shortcutsClose = document.getElementById('shortcuts-close');
 
 // ── Random inspiration data ────────────────────────────────────────────────
 const RANDOM_THEMES = [
@@ -76,21 +131,25 @@ const RANDOM_THEMES = [
   'the weight of silence', 'crumbling walls', 'fireflies at dusk', 'a wound that healed',
   'the ocean at night',
 ];
-const RANDOM_MOODS = [
-  'Melancholic', 'Wistful', 'Nostalgic', 'Haunting', 'Tranquil', 'Longing',
-  'Dreamy', 'Mystical', 'Hopeful', 'Pensive', 'Reverent', 'Stirring',
-  'Eerie', 'Peaceful', 'Sorrowful', 'Romantic',
-];
-const RANDOM_FORMS = [
-  'Free Verse', 'Sonnet', 'Haiku', 'Elegy', 'Ode', 'Villanelle',
-  'Ghazal', 'Tanka', 'Lyric', 'Ballad', 'Pantoum', 'Sestina',
-];
-const RANDOM_RHYMES = [
-  'Free Verse', 'Slant Rhyme', 'Alternate Rhyme', 'Couplet Rhyme',
-  'Internal Rhyme', 'Half Rhyme', 'Free Verse', 'Free Verse',
-];
+const RANDOM_MOODS  = ['Melancholic','Wistful','Nostalgic','Haunting','Tranquil','Longing','Dreamy','Mystical','Hopeful','Pensive','Reverent','Stirring','Eerie','Peaceful','Sorrowful','Romantic'];
+const RANDOM_FORMS  = ['Free Verse','Sonnet','Haiku','Elegy','Ode','Villanelle','Ghazal','Tanka','Lyric','Ballad','Pantoum','Sestina'];
+const RANDOM_RHYMES = ['Free Verse','Slant Rhyme','Alternate Rhyme','Couplet Rhyme','Internal Rhyme','Half Rhyme','Free Verse','Free Verse'];
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ── Font size ──────────────────────────────────────────────────────────────
+function applyFontSize() {
+  poemText.style.fontSize = `${FONT_SIZES[fontSizeIdx]}rem`;
+  fontSizeDown.disabled   = fontSizeIdx === 0;
+  fontSizeUp.disabled     = fontSizeIdx === FONT_SIZES.length - 1;
+}
+fontSizeDown.addEventListener('click', () => {
+  if (fontSizeIdx > 0) { fontSizeIdx--; applyFontSize(); localStorage.setItem('volta-font-size', fontSizeIdx); }
+});
+fontSizeUp.addEventListener('click', () => {
+  if (fontSizeIdx < FONT_SIZES.length - 1) { fontSizeIdx++; applyFontSize(); localStorage.setItem('volta-font-size', fontSizeIdx); }
+});
+applyFontSize();
 
 // ── Slider fill ────────────────────────────────────────────────────────────
 function updateSliderFill() {
@@ -115,6 +174,7 @@ randomBtn.addEventListener('click', () => {
   document.getElementById('keywords').value = '';
   styleInput.value = '';
   clearActiveChip();
+  clearActiveOccasion();
 });
 
 function setSelectValue(id, value) {
@@ -124,6 +184,31 @@ function setSelectValue(id, value) {
   }
 }
 
+// ── Occasion presets ───────────────────────────────────────────────────────
+function clearActiveOccasion() {
+  occasionBtns.forEach(b => b.classList.remove('active'));
+}
+
+occasionBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const occ = OCCASIONS[btn.dataset.occasion];
+    if (!occ) return;
+    document.getElementById('theme').value    = occ.theme;
+    document.getElementById('keywords').value = occ.keywords;
+    setSelectValue('mood', occ.mood);
+    setSelectValue('poetic_form', occ.poetic_form);
+    setSelectValue('rhyme_scheme', occ.rhyme_scheme);
+    lengthInput.value = occ.length;
+    lengthDisplay.textContent = occ.length;
+    updateSliderFill();
+    styleInput.value = '';
+    clearActiveChip();
+    clearActiveOccasion();
+    btn.classList.add('active');
+    document.getElementById('theme').focus();
+  });
+});
+
 // ── Poet preset chips ──────────────────────────────────────────────────────
 function clearActiveChip() {
   presetChips.forEach(c => c.classList.remove('active'));
@@ -131,8 +216,7 @@ function clearActiveChip() {
 
 presetChips.forEach((chip) => {
   chip.addEventListener('click', () => {
-    const poet = chip.dataset.poet;
-    styleInput.value = poet;
+    styleInput.value = chip.dataset.poet;
     clearActiveChip();
     chip.classList.add('active');
   });
@@ -145,16 +229,54 @@ styleInput.addEventListener('input', () => {
   });
 });
 
+// ── Keyboard shortcuts modal ───────────────────────────────────────────────
+function openShortcuts()  { shortcutsModal.style.display = ''; }
+function closeShortcuts() { shortcutsModal.style.display = 'none'; }
+
+shortcutsBtn.addEventListener('click', openShortcuts);
+shortcutsClose.addEventListener('click', closeShortcuts);
+shortcutsModal.addEventListener('click', (e) => {
+  if (e.target === shortcutsModal) closeShortcuts();
+});
+
 // ── Keyboard shortcuts ────────────────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
+  const inField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+
   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
     e.preventDefault();
     if (!isGenerating) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   }
-  if (e.key === 'Escape' && poemCard.classList.contains('fullscreen')) {
-    exitFullscreen();
+  if (e.key === 'Escape') {
+    if (poemCard.classList.contains('fullscreen')) exitFullscreen();
+    else if (shortcutsModal.style.display !== 'none') closeShortcuts();
+  }
+  if (e.key === '?' && !inField) {
+    shortcutsModal.style.display === 'none' ? openShortcuts() : closeShortcuts();
   }
 });
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const div = document.createElement('div');
+  div.className   = 'toast';
+  div.textContent = msg;
+  document.body.appendChild(div);
+  requestAnimationFrame(() => requestAnimationFrame(() => div.classList.add('visible')));
+  setTimeout(() => {
+    div.classList.remove('visible');
+    setTimeout(() => div.remove(), 300);
+  }, 2200);
+}
+
+// ── Auto-save ─────────────────────────────────────────────────────────────
+function autosave() {
+  if (!currentPoem) return;
+  localStorage.setItem('volta-autosave', JSON.stringify({
+    poem: currentPoem, title: currentTitle, theme: currentTheme, ts: Date.now(),
+  }));
+}
 
 // ── Display helpers ────────────────────────────────────────────────────────
 function showEmpty() {
@@ -163,7 +285,7 @@ function showEmpty() {
   loadingState.style.display  = 'none';
   poemTitleWrap.style.display = 'none';
   poemText.style.display      = 'none';
-  poemStats.style.display     = 'none';
+  poemMeta.style.display      = 'none';
   poemActions.style.display   = 'none';
   revisionBar.style.display   = 'none';
   currentTitle = '';
@@ -175,7 +297,7 @@ function showLoading() {
   loadingState.style.display  = '';
   poemTitleWrap.style.display = 'none';
   poemText.style.display      = 'none';
-  poemStats.style.display     = 'none';
+  poemMeta.style.display      = 'none';
   poemActions.style.display   = 'none';
   revisionBar.style.display   = 'none';
 }
@@ -187,10 +309,12 @@ function showPoem(text) {
   poemText.style.display     = '';
   poemText.innerHTML         = renderStanzas(text);
   poemText.classList.remove('streaming');
+  applyFontSize();
   poemActions.style.display  = '';
   revisionBar.style.display  = '';
   renderStats(text);
   updateStarState();
+  autosave();
 }
 
 function startStreaming() {
@@ -201,7 +325,7 @@ function startStreaming() {
   poemText.style.display      = '';
   poemText.innerHTML          = '';
   poemText.classList.add('streaming');
-  poemStats.style.display     = 'none';
+  poemMeta.style.display      = 'none';
   poemActions.style.display   = 'none';
   revisionBar.style.display   = 'none';
 }
@@ -214,12 +338,12 @@ function renderStanzas(text) {
 
 // ── Poem stats ─────────────────────────────────────────────────────────────
 function renderStats(text) {
-  if (!text) { poemStats.style.display = 'none'; return; }
+  if (!text) { poemMeta.style.display = 'none'; return; }
   const lines   = text.split('\n').filter(l => l.trim()).length;
   const words   = text.split(/\s+/).filter(Boolean).length;
   const stanzas = text.split(/\n{2,}/).filter(s => s.trim()).length;
   poemStats.textContent = `${words} words · ${lines} lines · ${stanzas} stanza${stanzas !== 1 ? 's' : ''}`;
-  poemStats.style.display = '';
+  poemMeta.style.display = '';
 }
 
 // ── Title helpers ──────────────────────────────────────────────────────────
@@ -246,17 +370,12 @@ async function fetchTitle(poem) {
   showTitleLoading();
   try {
     const res  = await fetch('/title', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ poem }),
     });
     const data = await res.json();
-    if (data.title) {
-      currentTitle = cleanTitle(data.title);
-      showTitle(currentTitle);
-    } else {
-      poemTitleWrap.style.display = 'none';
-    }
+    if (data.title) { currentTitle = cleanTitle(data.title); showTitle(currentTitle); }
+    else poemTitleWrap.style.display = 'none';
   } catch {
     poemTitleWrap.style.display = 'none';
   } finally {
@@ -328,8 +447,7 @@ async function runGeneration(payload) {
 
   try {
     await consumeStream(
-      '/generate',
-      payload,
+      '/generate', payload,
       (text) => {
         if (firstChunk) { startStreaming(); firstChunk = false; }
         currentPoem += text.replace(/\*/g, '');
@@ -343,8 +461,7 @@ async function runGeneration(payload) {
       (err) => { showEmpty(); showError(err); },
     );
   } catch (err) {
-    showEmpty();
-    showError(err.message);
+    showEmpty(); showError(err.message);
   } finally {
     isGenerating = false;
     generateBtn.disabled = false;
@@ -391,19 +508,14 @@ continueBtn.addEventListener('click', async () => {
 
   try {
     await consumeStream(
-      '/continue',
-      { poem: prevPoem },
+      '/continue', { poem: prevPoem },
       (text) => {
-        if (firstChunk) {
-          poemText.classList.add('streaming');
-          firstChunk = false;
-        }
+        if (firstChunk) { poemText.classList.add('streaming'); firstChunk = false; }
         continuation += text.replace(/\*/g, '');
         poemText.innerHTML = renderStanzas(prevPoem + '\n\n' + continuation);
       },
       () => {
-        undoPoem  = prevPoem;
-        undoTitle = prevTitle;
+        undoPoem = prevPoem; undoTitle = prevTitle;
         undoBtn.style.display = '';
         currentPoem = prevPoem + '\n\n' + continuation;
         showPoem(currentPoem);
@@ -412,9 +524,7 @@ continueBtn.addEventListener('click', async () => {
       (err) => { currentPoem = prevPoem; showPoem(prevPoem); showError(err); },
     );
   } catch (err) {
-    currentPoem = prevPoem;
-    showPoem(prevPoem);
-    showError(err.message);
+    currentPoem = prevPoem; showPoem(prevPoem); showError(err.message);
   } finally {
     isGenerating = false;
     continueBtn.disabled = false;
@@ -441,16 +551,14 @@ async function runRevision(instruction) {
 
   try {
     await consumeStream(
-      '/revise',
-      { poem: prevPoem, instruction },
+      '/revise', { poem: prevPoem, instruction },
       (text) => {
         if (firstChunk) { startStreaming(); firstChunk = false; }
         currentPoem += text.replace(/\*/g, '');
         poemText.innerHTML = renderStanzas(currentPoem);
       },
       () => {
-        undoPoem  = prevPoem;
-        undoTitle = prevTitle;
+        undoPoem = prevPoem; undoTitle = prevTitle;
         undoBtn.style.display = '';
         showPoem(currentPoem);
         fetchTitle(currentPoem);
@@ -458,9 +566,7 @@ async function runRevision(instruction) {
       (err) => { currentPoem = prevPoem; showPoem(prevPoem); showError(err); },
     );
   } catch (err) {
-    currentPoem = prevPoem;
-    showPoem(prevPoem);
-    showError(err.message);
+    currentPoem = prevPoem; showPoem(prevPoem); showError(err.message);
   } finally {
     isGenerating = false;
     revisionBtns.forEach(b => b.disabled = false);
@@ -493,11 +599,8 @@ undoBtn.addEventListener('click', () => {
   undoTitle    = '';
   undoBtn.style.display = 'none';
   showPoem(currentPoem);
-  if (currentTitle) {
-    showTitle(currentTitle);
-  } else {
-    poemTitleWrap.style.display = 'none';
-  }
+  if (currentTitle) showTitle(currentTitle);
+  else poemTitleWrap.style.display = 'none';
 });
 
 // ── Copy ───────────────────────────────────────────────────────────────────
@@ -521,8 +624,7 @@ downloadBtn.addEventListener('click', () => {
   const blob    = new Blob([content], { type: 'text/plain' });
   const url     = URL.createObjectURL(blob);
   const a       = document.createElement('a');
-  a.href = url; a.download = `volta-${slug}.txt`;
-  a.click();
+  a.href = url; a.download = `volta-${slug}.txt`; a.click();
   URL.revokeObjectURL(url);
 });
 
@@ -539,9 +641,7 @@ shareBtn.addEventListener('click', async () => {
       shareBtn.classList.remove('copied');
       shareBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share`;
     }, 2000);
-  } catch {
-    showError('Could not copy share link.');
-  }
+  } catch { showError('Could not copy share link.'); }
 });
 
 // ── Print ──────────────────────────────────────────────────────────────────
@@ -571,16 +671,8 @@ readBtn.addEventListener('click', () => {
   const utterance  = new SpeechSynthesisUtterance(currentPoem);
   utterance.rate   = 0.85;
   utterance.pitch  = 1.0;
-  utterance.onend  = () => {
-    isSpeaking = false;
-    readBtn.innerHTML = READ_IDLE;
-    readBtn.classList.remove('speaking');
-  };
-  utterance.onerror = () => {
-    isSpeaking = false;
-    readBtn.innerHTML = READ_IDLE;
-    readBtn.classList.remove('speaking');
-  };
+  utterance.onend  = () => { isSpeaking = false; readBtn.innerHTML = READ_IDLE; readBtn.classList.remove('speaking'); };
+  utterance.onerror = () => { isSpeaking = false; readBtn.innerHTML = READ_IDLE; readBtn.classList.remove('speaking'); };
   window.speechSynthesis.speak(utterance);
   isSpeaking = true;
   readBtn.innerHTML = READ_STOP;
@@ -594,7 +686,6 @@ function saveFavorites() {
 
 const STAR_EMPTY  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg> Save`;
 const STAR_FILLED = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg> Saved`;
-
 starBtn.innerHTML = STAR_EMPTY;
 
 starBtn.addEventListener('click', () => {
@@ -604,11 +695,13 @@ starBtn.addEventListener('click', () => {
     favorites.splice(idx, 1);
     starBtn.innerHTML = STAR_EMPTY;
     starBtn.classList.remove('starred');
+    showToast('Removed from favorites');
   } else {
     favorites.unshift({ poem: currentPoem, title: currentTitle, theme: currentTheme, ts: Date.now() });
     if (favorites.length > 20) favorites.pop();
     starBtn.innerHTML = STAR_FILLED;
     starBtn.classList.add('starred');
+    showToast('Saved to favorites');
   }
   saveFavorites();
   renderFavorites();
@@ -625,7 +718,7 @@ function renderFavorites() {
   favoritesSection.style.display = '';
   favoritesList.innerHTML = '';
   favorites.forEach((item) => {
-    const card = document.createElement('div');
+    const card    = document.createElement('div');
     card.className = 'history-card';
     const label   = item.title || item.theme;
     const excerpt = item.poem.split('\n').find(l => l.trim()) || '';
@@ -699,14 +792,13 @@ clearHistoryBtn.addEventListener('click', () => {
   renderHistory();
 });
 
-// ── Analyze toggle ────────────────────────────────────────────────────────
+// ── Analyze ───────────────────────────────────────────────────────────────
 analyzeToggle.addEventListener('click', () => {
   const open = analyzePanel.style.display === 'none';
   analyzePanel.style.display = open ? '' : 'none';
   analyzeToggle.classList.toggle('open', open);
 });
 
-// ── File upload → textarea ────────────────────────────────────────────────
 fileUpload.addEventListener('change', () => {
   const file = fileUpload.files[0];
   if (!file) return;
@@ -716,7 +808,6 @@ fileUpload.addEventListener('change', () => {
   fileUpload.value = '';
 });
 
-// ── Analyze ───────────────────────────────────────────────────────────────
 analyzeBtn.addEventListener('click', async () => {
   const poem = analyzeInput.value.trim();
   if (!poem) return;
@@ -728,21 +819,18 @@ analyzeBtn.addEventListener('click', async () => {
 
   try {
     const res  = await fetch('/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ poem }),
     });
     const data = await res.json();
     if (data.error) {
-      analyzeError.textContent   = data.error;
-      analyzeError.style.display = '';
+      analyzeError.textContent = data.error; analyzeError.style.display = '';
     } else {
-      analyzeRows.innerHTML       = renderAnalysis(data.analysis);
+      analyzeRows.innerHTML = renderAnalysis(data.analysis);
       analyzeResult.style.display = '';
     }
   } catch (err) {
-    analyzeError.textContent   = err.message;
-    analyzeError.style.display = '';
+    analyzeError.textContent = err.message; analyzeError.style.display = '';
   } finally {
     analyzeBtn.disabled = false;
     analyzeBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> Analyze`;
@@ -768,23 +856,20 @@ const poemSection = document.querySelector('.poem-section');
 
 function showError(msg) {
   const div = document.createElement('div');
-  div.className   = 'error-msg';
-  div.textContent = msg;
+  div.className = 'error-msg'; div.textContent = msg;
   poemSection.prepend(div);
   setTimeout(() => div.remove(), 6000);
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────
 function escHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// ── Init: load poem from URL hash ──────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────────────────────
 renderFavorites();
 
+// Load poem from URL hash (shared link)
 if (location.hash.length > 1) {
   try {
     const poem = decodeURIComponent(escape(atob(location.hash.slice(1))));
@@ -793,5 +878,17 @@ if (location.hash.length > 1) {
       showPoem(currentPoem);
       fetchTitle(currentPoem);
     }
-  } catch { /* invalid hash — ignore */ }
+  } catch { /* invalid hash */ }
+}
+// Restore last poem from auto-save (only if no hash)
+else {
+  const saved = JSON.parse(localStorage.getItem('volta-autosave') || 'null');
+  if (saved && saved.poem) {
+    currentPoem  = saved.poem;
+    currentTitle = saved.title || '';
+    currentTheme = saved.theme || '';
+    showPoem(currentPoem);
+    if (currentTitle) showTitle(currentTitle);
+    showToast('Restored your last poem');
+  }
 }
