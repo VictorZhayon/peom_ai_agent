@@ -6,11 +6,13 @@ const favorites = JSON.parse(localStorage.getItem('volta-favorites') || '[]');
 let currentPoem  = '';
 let currentTheme = '';
 let currentTitle = '';
+let currentMood  = '';
 let isGenerating    = false;
 let isFetchingTitle = false;
 let isSpeaking      = false;
 let undoPoem        = '';
 let undoTitle       = '';
+let respondPoem     = '';
 
 // ── Font size ──────────────────────────────────────────────────────────────
 const FONT_SIZES = [1.0, 1.15, 1.35, 1.5, 1.65, 1.85];
@@ -80,7 +82,9 @@ const fontSizeUp       = document.getElementById('font-size-up');
 const poemActions      = document.getElementById('poem-actions');
 const regenerateBtn    = document.getElementById('regenerate-btn');
 const continueBtn      = document.getElementById('continue-btn');
+const respondBtn       = document.getElementById('respond-btn');
 const undoBtn          = document.getElementById('undo-btn');
+const diffBtn          = document.getElementById('diff-btn');
 const starBtn          = document.getElementById('star-btn');
 const readBtn          = document.getElementById('read-btn');
 const copyBtn          = document.getElementById('copy-btn');
@@ -93,6 +97,23 @@ const revisionBar      = document.getElementById('revision-bar');
 const revisionBtns     = document.querySelectorAll('.btn-revise[data-instruction]');
 const revisionCustomInput = document.getElementById('revision-custom-input');
 const revisionCustomBtn   = document.getElementById('revision-custom-btn');
+
+// Response panel refs
+const responseSection = document.getElementById('response-section');
+const responseText    = document.getElementById('response-text');
+const responseAdopt   = document.getElementById('response-adopt');
+const responseDismiss = document.getElementById('response-dismiss');
+
+// Diff modal refs
+const diffModal   = document.getElementById('diff-modal');
+const diffClose   = document.getElementById('diff-close');
+const diffContent = document.getElementById('diff-content');
+
+// Cloud history refs
+const cloudHistoryBtn = document.getElementById('cloud-history-btn');
+const cloudModal      = document.getElementById('cloud-modal');
+const cloudClose      = document.getElementById('cloud-close');
+const cloudList       = document.getElementById('cloud-list');
 
 const analyzeToggle = document.getElementById('analyze-toggle');
 const analyzePanel  = document.getElementById('analyze-panel');
@@ -250,6 +271,8 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (poemCard.classList.contains('fullscreen')) exitFullscreen();
     else if (shortcutsModal.style.display !== 'none') closeShortcuts();
+    else if (diffModal.style.display !== 'none') closeDiff();
+    else if (cloudModal.style.display !== 'none') closeCloudModal();
   }
   if (e.key === '?' && !inField) {
     shortcutsModal.style.display === 'none' ? openShortcuts() : closeShortcuts();
@@ -277,6 +300,37 @@ function autosave() {
     poem: currentPoem, title: currentTitle, theme: currentTheme, ts: Date.now(),
   }));
 }
+
+// ── Save to server ────────────────────────────────────────────────────────
+async function saveToServer(poem, title, theme, mood) {
+  try {
+    await fetch('/poems', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ poem, title, theme, mood }),
+    });
+  } catch { /* silent — server history is best-effort */ }
+}
+
+// ── Response section ──────────────────────────────────────────────────────
+function dismissResponse() {
+  respondPoem = '';
+  responseSection.style.display = 'none';
+  responseText.innerHTML = '';
+}
+
+responseAdopt.addEventListener('click', () => {
+  if (!respondPoem) return;
+  currentPoem = respondPoem;
+  dismissResponse();
+  undoPoem = ''; undoTitle = '';
+  undoBtn.style.display  = 'none';
+  diffBtn.style.display  = 'none';
+  showPoem(currentPoem);
+  fetchTitle(currentPoem);
+});
+
+responseDismiss.addEventListener('click', dismissResponse);
 
 // ── Display helpers ────────────────────────────────────────────────────────
 function showEmpty() {
@@ -435,12 +489,14 @@ function stopSpeech() {
 async function runGeneration(payload) {
   if (isGenerating) return;
   stopSpeech();
+  dismissResponse();
   isGenerating = true;
   generateBtn.disabled = true;
   currentPoem  = '';
   undoPoem     = '';
   undoTitle    = '';
-  undoBtn.style.display = 'none';
+  undoBtn.style.display  = 'none';
+  diffBtn.style.display  = 'none';
 
   showLoading();
   let firstChunk = true;
@@ -457,6 +513,7 @@ async function runGeneration(payload) {
         showPoem(currentPoem);
         addToHistory(currentPoem, payload.theme, payload.mood, payload.poetic_form);
         fetchTitle(currentPoem);
+        saveToServer(currentPoem, '', payload.theme, payload.mood);
       },
       (err) => { showEmpty(); showError(err); },
     );
@@ -473,9 +530,10 @@ form.addEventListener('submit', (e) => {
   const theme = document.getElementById('theme').value.trim();
   if (!theme) return;
   currentTheme = theme;
+  currentMood  = document.getElementById('mood').value;
   runGeneration({
     theme,
-    mood:              document.getElementById('mood').value,
+    mood:              currentMood,
     length:            parseInt(lengthInput.value, 10),
     poetic_form:       document.getElementById('poetic_form').value,
     keywords:          document.getElementById('keywords').value.trim(),
@@ -517,6 +575,7 @@ continueBtn.addEventListener('click', async () => {
       () => {
         undoPoem = prevPoem; undoTitle = prevTitle;
         undoBtn.style.display = '';
+        diffBtn.style.display = '';
         currentPoem = prevPoem + '\n\n' + continuation;
         showPoem(currentPoem);
         fetchTitle(currentPoem);
@@ -528,6 +587,40 @@ continueBtn.addEventListener('click', async () => {
   } finally {
     isGenerating = false;
     continueBtn.disabled = false;
+    generateBtn.disabled = false;
+  }
+});
+
+// ── Respond to poem ────────────────────────────────────────────────────────
+respondBtn.addEventListener('click', async () => {
+  if (isGenerating || !currentPoem) return;
+  stopSpeech();
+  isGenerating = true;
+  respondBtn.disabled  = true;
+  generateBtn.disabled = true;
+  respondPoem = '';
+  responseText.innerHTML = '';
+  responseSection.style.display = '';
+  responseAdopt.disabled = true;
+
+  try {
+    await consumeStream(
+      '/respond', { poem: currentPoem },
+      (text) => {
+        respondPoem += text.replace(/\*/g, '');
+        responseText.innerHTML = renderStanzas(respondPoem);
+      },
+      () => {
+        responseAdopt.disabled = false;
+      },
+      (err) => { responseSection.style.display = 'none'; showError(err); },
+    );
+  } catch (err) {
+    responseSection.style.display = 'none';
+    showError(err.message);
+  } finally {
+    isGenerating = false;
+    respondBtn.disabled  = false;
     generateBtn.disabled = false;
   }
 });
@@ -560,6 +653,7 @@ async function runRevision(instruction) {
       () => {
         undoPoem = prevPoem; undoTitle = prevTitle;
         undoBtn.style.display = '';
+        diffBtn.style.display = '';
         showPoem(currentPoem);
         fetchTitle(currentPoem);
       },
@@ -598,10 +692,116 @@ undoBtn.addEventListener('click', () => {
   undoPoem     = '';
   undoTitle    = '';
   undoBtn.style.display = 'none';
+  diffBtn.style.display = 'none';
   showPoem(currentPoem);
   if (currentTitle) showTitle(currentTitle);
   else poemTitleWrap.style.display = 'none';
 });
+
+// ── Compare (diff) ─────────────────────────────────────────────────────────
+function diffLines(oldText, newText) {
+  const a = oldText.split('\n');
+  const b = newText.split('\n');
+  const m = a.length, n = b.length;
+
+  // LCS DP table
+  const dp = Array.from({ length: m + 1 }, () => new Int32Array(n + 1));
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1] + 1
+        : Math.max(dp[i-1][j], dp[i][j-1]);
+
+  // Backtrack
+  const result = [];
+  let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i-1] === b[j-1]) {
+      result.unshift({ type: 'same', text: a[i-1] });
+      i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
+      result.unshift({ type: 'add', text: b[j-1] });
+      j--;
+    } else {
+      result.unshift({ type: 'remove', text: a[i-1] });
+      i--;
+    }
+  }
+  return result;
+}
+
+function openDiff() {
+  if (!undoPoem || !currentPoem) return;
+  const lines = diffLines(undoPoem, currentPoem);
+  const hasChanges = lines.some(l => l.type !== 'same');
+
+  if (!hasChanges) {
+    diffContent.innerHTML = `<div class="diff-empty">No changes detected.</div>`;
+  } else {
+    diffContent.innerHTML = lines.map(({ type, text }) => {
+      const marker = type === 'add' ? '+' : type === 'remove' ? '−' : '·';
+      const display = text.trim() === '' ? '&nbsp;' : escHtml(text);
+      return `<div class="diff-line ${type}"><span class="diff-line-marker">${marker}</span><span>${display}</span></div>`;
+    }).join('');
+  }
+
+  diffModal.style.display = '';
+}
+
+function closeDiff() { diffModal.style.display = 'none'; }
+
+diffBtn.addEventListener('click', openDiff);
+diffClose.addEventListener('click', closeDiff);
+diffModal.addEventListener('click', (e) => { if (e.target === diffModal) closeDiff(); });
+
+// ── Cloud history ──────────────────────────────────────────────────────────
+async function openCloudHistory() {
+  cloudList.innerHTML = `<div class="cloud-empty">Loading…</div>`;
+  cloudModal.style.display = '';
+
+  try {
+    const res  = await fetch('/poems?limit=50');
+    const data = await res.json();
+    renderCloudItems(data.poems || []);
+  } catch {
+    cloudList.innerHTML = `<div class="cloud-empty">Could not load saved poems.</div>`;
+  }
+}
+
+function renderCloudItems(poems) {
+  if (poems.length === 0) {
+    cloudList.innerHTML = `<div class="cloud-empty">No saved poems yet. Generate one to start.</div>`;
+    return;
+  }
+  cloudList.innerHTML = '';
+  poems.forEach((item) => {
+    const el = document.createElement('div');
+    el.className = 'cloud-item';
+    const label   = item.title || item.theme || 'Untitled';
+    const excerpt = (item.poem || '').split('\n').find(l => l.trim()) || '';
+    const date    = item.created_at ? new Date(item.created_at + 'Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+    el.innerHTML = `
+      <div class="cloud-item-title">${escHtml(label)}</div>
+      <div class="cloud-item-excerpt">${escHtml(excerpt.slice(0, 60))}${excerpt.length > 60 ? '…' : ''}</div>
+      <div class="cloud-item-meta">${item.mood ? escHtml(item.mood) + ' · ' : ''}${date}</div>
+    `;
+    el.addEventListener('click', () => {
+      currentPoem  = item.poem;
+      currentTitle = item.title || '';
+      currentTheme = item.theme || '';
+      showPoem(currentPoem);
+      if (currentTitle) showTitle(currentTitle);
+      closeCloudModal();
+    });
+    cloudList.appendChild(el);
+  });
+}
+
+function closeCloudModal() { cloudModal.style.display = 'none'; }
+
+cloudHistoryBtn.addEventListener('click', openCloudHistory);
+cloudClose.addEventListener('click', closeCloudModal);
+cloudModal.addEventListener('click', (e) => { if (e.target === cloudModal) closeCloudModal(); });
 
 // ── Copy ───────────────────────────────────────────────────────────────────
 copyBtn.addEventListener('click', async () => {
@@ -864,6 +1064,11 @@ function showError(msg) {
 // ── Utils ─────────────────────────────────────────────────────────────────
 function escHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── PWA service worker ────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js', { scope: '/' }).catch(() => {});
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────

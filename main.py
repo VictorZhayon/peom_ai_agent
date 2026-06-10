@@ -1,7 +1,11 @@
 import re
 import json
 import os
+import sqlite3
+import asyncio
 from contextlib import asynccontextmanager
+from concurrent.futures import ThreadPoolExecutor
+
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -9,20 +13,55 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 load_dotenv()
 
+# ── Rate limiter ────────────────────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address)
 
+# ── SQLite helpers ──────────────────────────────────────────────────────────
+DB_PATH = "/tmp/volta.db"
+_db_executor = ThreadPoolExecutor(max_workers=1)
+
+
+def _db_init():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS poems (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            poem       TEXT    NOT NULL,
+            title      TEXT    DEFAULT '',
+            theme      TEXT    DEFAULT '',
+            mood       TEXT    DEFAULT '',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+async def db_run(fn):
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_db_executor, fn)
+
+
+# ── App lifecycle ───────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not os.getenv("GOOGLE_AI_API_KEY"):
         raise RuntimeError(
             "GOOGLE_AI_API_KEY is not set. Copy .env.example to .env and add your key."
         )
+    await db_run(_db_init)
     yield
 
 
 app = FastAPI(title="Volta", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -47,7 +86,7 @@ def sanitize(text: str, max_len: int = 500) -> str:
 
 
 async def stream_to_sse(prompt: str):
-    """Shared SSE streaming for all generation/revision endpoints."""
+    """Shared SSE streaming for all generation endpoints."""
     client = get_client()
     last_error = None
     for model in GEMINI_MODELS:
@@ -99,6 +138,7 @@ async def call_with_fallback(messages: list, max_tokens: int):
     return None, last_error or "All models failed.", None
 
 
+# ── Request models ──────────────────────────────────────────────────────────
 class GenerateRequest(BaseModel):
     theme: str
     mood: str
@@ -119,6 +159,10 @@ class ContinueRequest(BaseModel):
     poem: str
 
 
+class RespondRequest(BaseModel):
+    poem: str
+
+
 class AnalyzeRequest(BaseModel):
     poem: str
 
@@ -127,6 +171,14 @@ class TitleRequest(BaseModel):
     poem: str
 
 
+class SavePoemRequest(BaseModel):
+    poem: str
+    title: str = ""
+    theme: str = ""
+    mood: str = ""
+
+
+# ── Prompt builders ─────────────────────────────────────────────────────────
 def build_poem_prompt(req: GenerateRequest) -> str:
     theme = sanitize(req.theme, 100)
     keywords = sanitize(req.keywords, 200)
@@ -172,13 +224,26 @@ def build_revise_prompt(req: ReviseRequest) -> str:
     )
 
 
+def build_respond_prompt(req: RespondRequest) -> str:
+    poem = sanitize(req.poem, 2000)
+    return (
+        f"Here is a poem:\n\n{poem}\n\n"
+        f"Write a new poem that responds to it — as if in conversation, "
+        f"offering a reply, contrast, or a new perspective from a different voice. "
+        f"Match its emotional register but bring a distinct, surprising angle.\n"
+        f"Output only the response poem — no title, no preamble, no commentary."
+    )
+
+
+# ── Routes ───────────────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
 
 @app.post("/generate")
-async def generate(req: GenerateRequest):
+@limiter.limit("20/minute")
+async def generate(request: Request, req: GenerateRequest):
     return StreamingResponse(
         stream_to_sse(build_poem_prompt(req)),
         media_type="text/event-stream",
@@ -187,7 +252,8 @@ async def generate(req: GenerateRequest):
 
 
 @app.post("/revise")
-async def revise(req: ReviseRequest):
+@limiter.limit("30/minute")
+async def revise(request: Request, req: ReviseRequest):
     return StreamingResponse(
         stream_to_sse(build_revise_prompt(req)),
         media_type="text/event-stream",
@@ -196,7 +262,8 @@ async def revise(req: ReviseRequest):
 
 
 @app.post("/continue")
-async def continue_poem(req: ContinueRequest):
+@limiter.limit("20/minute")
+async def continue_poem(request: Request, req: ContinueRequest):
     return StreamingResponse(
         stream_to_sse(build_continue_prompt(req)),
         media_type="text/event-stream",
@@ -204,8 +271,19 @@ async def continue_poem(req: ContinueRequest):
     )
 
 
+@app.post("/respond")
+@limiter.limit("20/minute")
+async def respond_to_poem(request: Request, req: RespondRequest):
+    return StreamingResponse(
+        stream_to_sse(build_respond_prompt(req)),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @app.post("/title")
-async def title(req: TitleRequest):
+@limiter.limit("40/minute")
+async def title(request: Request, req: TitleRequest):
     poem = sanitize(req.poem, 2000)
     messages = [{
         "role": "user",
@@ -222,7 +300,8 @@ async def title(req: TitleRequest):
 
 
 @app.post("/analyze")
-async def analyze(req: AnalyzeRequest):
+@limiter.limit("20/minute")
+async def analyze(request: Request, req: AnalyzeRequest):
     poem = sanitize(req.poem, 2000)
     messages = [{
         "role": "user",
@@ -236,3 +315,44 @@ async def analyze(req: AnalyzeRequest):
     if error:
         return {"error": error}
     return {"analysis": content}
+
+
+@app.post("/poems")
+async def save_poem(req: SavePoemRequest):
+    def _save():
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute(
+            "INSERT INTO poems (poem, title, theme, mood) VALUES (?, ?, ?, ?)",
+            (req.poem[:3000], req.title[:100], req.theme[:100], req.mood[:50]),
+        )
+        conn.commit()
+        conn.close()
+    try:
+        await db_run(_save)
+    except Exception:
+        pass
+    return {"ok": True}
+
+
+@app.get("/poems")
+async def get_poems(limit: int = 50):
+    def _get():
+        conn = sqlite3.connect(DB_PATH)
+        rows = conn.execute(
+            "SELECT id, title, theme, mood, poem, created_at "
+            "FROM poems ORDER BY created_at DESC LIMIT ?",
+            (min(limit, 100),),
+        ).fetchall()
+        conn.close()
+        return [
+            {
+                "id": r[0], "title": r[1], "theme": r[2],
+                "mood": r[3], "poem": r[4], "created_at": r[5],
+            }
+            for r in rows
+        ]
+    try:
+        rows = await db_run(_get)
+    except Exception:
+        rows = []
+    return {"poems": rows}

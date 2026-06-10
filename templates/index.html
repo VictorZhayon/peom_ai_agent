@@ -4,7 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Volta</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='30' font-family='Georgia,serif' fill='%23c9a84c' font-style='italic'>V</text></svg>">
+  <meta name="description" content="Write, refine, and explore poetry powered by Gemini." />
+  <meta name="theme-color" content="#c9a84c" />
+  <meta property="og:title" content="Volta — Poetry" />
+  <meta property="og:description" content="Write, refine, and explore poetry powered by Gemini. Live streaming, 43 poetic forms, revision tools, and more." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Volta — Poetry" />
+  <meta name="twitter:description" content="Write, refine, and explore poetry. Live streaming SSE output." />
+  <link rel="manifest" href="/static/manifest.json" />
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -200,6 +209,12 @@
         </div>
         <div id="favorites-list"></div>
       </div>
+
+      <!-- Cloud history button -->
+      <button id="cloud-history-btn" class="btn-ghost cloud-history-btn" title="Browse all server-saved poems">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+        Browse all saved
+      </button>
     </aside>
 
     <!-- ── Main ── -->
@@ -262,6 +277,10 @@
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19,12 12,19 5,12"/></svg>
               Continue
             </button>
+            <button id="respond-btn" class="btn-action" title="Generate a poetic reply">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Respond
+            </button>
             <button id="undo-btn" class="btn-action btn-undo" title="Undo last revision" style="display:none">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,14 4,9 9,4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
               Undo
@@ -288,6 +307,10 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
               Share
             </button>
+            <button id="diff-btn" class="btn-action btn-compare" title="Compare with original" style="display:none">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><polyline points="8,7 3,12 8,17"/><polyline points="16,7 21,12 16,17"/></svg>
+              Compare
+            </button>
             <button id="print-btn" class="btn-action" title="Print">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6,18H4a2,2,0,0,1-2-2V11a2,2,0,0,1,2-2H20a2,2,0,0,1,2,2v5a2,2,0,0,1-2,2H18"/><rect x="6" y="14" width="12" height="8"/></svg>
               Print
@@ -311,6 +334,20 @@
           <div class="revision-custom">
             <input id="revision-custom-input" type="text" placeholder="Custom instruction… e.g. make the ending more hopeful" />
             <button id="revision-custom-btn" class="btn-revise revision-send-btn" title="Apply custom revision">→</button>
+          </div>
+        </div>
+
+        <!-- Response poem panel -->
+        <div id="response-section" class="response-section" style="display:none">
+          <div class="response-header">
+            <span class="response-label">— response poem —</span>
+            <div class="response-actions">
+              <button id="response-adopt" class="btn-action response-adopt-btn" title="Make this the main poem">Adopt</button>
+              <button id="response-dismiss" class="btn-ghost response-dismiss-btn" title="Dismiss">✕</button>
+            </div>
+          </div>
+          <div id="response-card" class="poem-card response-card">
+            <div id="response-text" class="poem-text"></div>
           </div>
         </div>
 
@@ -349,6 +386,28 @@
 
   <!-- Fullscreen close hint -->
   <div id="fullscreen-hint" class="fullscreen-hint" style="display:none">Press Esc to exit</div>
+
+  <!-- Diff modal -->
+  <div id="diff-modal" class="shortcuts-modal" style="display:none">
+    <div class="shortcuts-panel diff-panel">
+      <div class="shortcuts-header">
+        <span>Changes</span>
+        <button id="diff-close" class="shortcuts-close">✕</button>
+      </div>
+      <div id="diff-content" class="diff-content"></div>
+    </div>
+  </div>
+
+  <!-- Cloud history modal -->
+  <div id="cloud-modal" class="shortcuts-modal" style="display:none">
+    <div class="shortcuts-panel cloud-panel">
+      <div class="shortcuts-header">
+        <span>Saved Poems</span>
+        <button id="cloud-close" class="shortcuts-close">✕</button>
+      </div>
+      <div id="cloud-list" class="cloud-list"></div>
+    </div>
+  </div>
 
   <!-- Keyboard shortcuts modal -->
   <div id="shortcuts-modal" class="shortcuts-modal" style="display:none">

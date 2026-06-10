@@ -1165,3 +1165,172 @@ kbd {
   .poem-text  { color: #111 !important; font-size: 1.2rem !important; line-height: 1.9 !important; }
   .poem-text p { margin-bottom: 1.4em !important; }
 }
+
+/* ── Response poem panel ── */
+.response-section {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 20px;
+  margin-top: 8px;
+  animation: fadeSlideIn 0.3s var(--ease);
+}
+.response-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.response-label {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--accent);
+  opacity: 0.65;
+  letter-spacing: 0.06em;
+}
+.response-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.response-adopt-btn {
+  font-size: 11px;
+  color: var(--accent);
+  border-color: rgba(201,168,76,0.3);
+}
+.response-adopt-btn:hover {
+  background: var(--accent-dim);
+  border-color: rgba(201,168,76,0.5);
+}
+.response-dismiss-btn {
+  font-size: 13px;
+  padding: 4px 10px;
+  opacity: 0.5;
+  min-height: 0;
+}
+.response-dismiss-btn:hover { opacity: 1; }
+.response-card {
+  min-height: 80px;
+  max-height: 45vh;
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: flex-start;
+  background: rgba(14,14,30,0.6);
+  border-color: rgba(201,168,76,0.1);
+  padding: 20px 24px;
+}
+.response-card .poem-text { display: block !important; }
+
+/* ── Diff modal ── */
+.diff-panel {
+  max-width: 680px !important;
+  width: 92vw !important;
+  max-height: 78vh;
+  overflow-y: auto;
+}
+.diff-content {
+  padding: 4px 0 8px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+.diff-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 1px 8px;
+  border-radius: 3px;
+}
+.diff-line.add    { background: rgba(109,186,136,0.12); color: #7dcf9b; }
+.diff-line.remove { background: rgba(217,95,95,0.09); color: rgba(217,95,95,0.55); text-decoration: line-through; }
+.diff-line.same   { color: var(--text-dim); }
+.diff-line-marker {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  opacity: 0.5;
+  min-width: 12px;
+  user-select: none;
+}
+.diff-empty {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 28px 0;
+}
+
+/* ── Cloud history modal ── */
+.cloud-panel {
+  max-width: 560px !important;
+  width: 92vw !important;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.cloud-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: calc(80vh - 80px);
+  padding: 4px 0 8px;
+}
+.cloud-item {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+}
+.cloud-item:hover {
+  border-color: rgba(201,168,76,0.25);
+  background: rgba(201,168,76,0.04);
+}
+.cloud-item-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+.cloud-item-excerpt {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.cloud-item-meta {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+.cloud-empty {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 32px 0;
+}
+
+/* ── Cloud history sidebar button ── */
+.cloud-history-btn {
+  width: 100%;
+  margin-top: 8px;
+  font-size: 11px;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0.7;
+}
+.cloud-history-btn:hover { opacity: 1; }
+
+/* ── Compare button ── */
+.btn-compare {
+  color: rgba(201,168,76,0.7);
+  border-color: rgba(201,168,76,0.2);
+}
+.btn-compare:hover {
+  color: var(--accent);
+  border-color: rgba(201,168,76,0.45);
+  background: var(--accent-dim);
+}
