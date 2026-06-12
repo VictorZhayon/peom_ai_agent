@@ -65,10 +65,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# Cheapest first; gemini-2.0-flash-lite* were shut down 2026-06-01.
 GEMINI_MODELS = [
     "gemini-2.5-flash-lite",
-    "gemini-2.0-flash-lite",
-    "gemini-2.0-flash-lite-001",
+    "gemini-2.5-flash",
 ]
 
 RETRYABLE_CODES = ("429", "503", "529")
@@ -95,7 +95,7 @@ async def stream_to_sse(prompt: str):
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 stream=True,
-                max_tokens=2048,
+                max_tokens=1024,
             )
             yield f"data: {json.dumps({'model': model})}\n\n"
             async for chunk in stream:
